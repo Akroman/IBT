@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebGL</title>
+</head>
+<body>
+    <div class="row" style="margin: 10px">
+        <div class="col-3 sideBar">
+            <div class="row">
+                <div class="col-3">
+                    <label for="objUpload">
+                        OBJ Soubor
+                    </label>
+                </div>
+                <div class="col-2">
+                    <input type="file" id="objUpload">
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+                <h5>Kamera</h5>
+            </div>
+
+            <div class="sideBarSection">
+                <div class="row">
+                    Pozice
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-1">
+                        <label for="cameraXPos">
+                            X
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraXPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="cameraXPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="cameraYPos">
+                            Y
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraYPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="cameraYPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="cameraZPos">
+                            Z
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraZPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="cameraZPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    Natočení
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-6">
+                        <label for="cameraLookAt">Zaměřit na objekt</label>
+                        <input type="checkbox" name="cameraRotation" value="cameraLookAt" id="cameraLookAt">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-2">
+                        <label for="cameraPitch">
+                            Pitch
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-90" max="90" value="0" class="slider" id="cameraPitch">
+                    </div>
+                    <div class="col-2">
+                        <label id="cameraPitchOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-2">
+                        <label for="cameraYaw">
+                            Yaw
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-90" max="90" value="0" class="slider" id="cameraYaw">
+                    </div>
+                    <div class="col-2">
+                        <label id="cameraYawOut"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+                <h5>Světlo</h5>
+            </div>
+
+            <div class="sideBarSection">
+                <div class="row" style="margin-top: 20px">
+                    Pozice
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-1">
+                        <label for="lightXPos">
+                            X
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightXPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightXPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="lightYPos">
+                            Y
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightYPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightYPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="lightZPos">
+                            Z
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightZPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightZPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    Barva
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-1">
+                        <label for="lightRedColor">
+                            R
+                        </label>
+                    </div>
+                    <div class="col-1" style="margin-right: 50px">
+                        <input type="number" min="0" max="255" value="255" id="lightRedColor">
+                    </div>
+
+                    <div class="col-1">
+                        <label for="lightGreenColor">
+                            G
+                        </label>
+                    </div>
+                    <div class="col-1" style="margin-right: 50px">
+                        <input type="number" min="0" max="255" value="255" id="lightGreenColor">
+                    </div>
+
+                    <div class="col-1">
+                        <label for="lightBlueColor">
+                            B
+                        </label>
+                    </div>
+                    <div class="col-1">
+                        <input type="number" min="0" max="255" value="255" id="lightBlueColor">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-5">
+            <canvas id="canvas" tabindex="0" style="outline: none"></canvas>
+        </div>
+
+        <div class="col-3 sideBar">
+            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+                <h5>Light field</h5>
+            </div>
+
+            <div class="sideBarSection">
+                <div class="row">
+                    Pozice
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-1">
+                        <label for="lightFieldXPos">
+                            X
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldXPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightFieldXPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="lightFieldYPos">
+                            Y
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldYPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightFieldYPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="lightFieldZPos">
+                            Z
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldZPos">
+                    </div>
+                    <div class="col-2">
+                        <label id="lightFieldZPosOut"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sideBarSection">
+                <div class="row">
+                    Kamery
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-6">
+                        <label for="lfVertCamNumber">
+                            Počet kamer vertikálně
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <input type="number" value="8" min="2" max="32" id="lfVertCamNumber">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <label for="lfHorCamNumber">
+                            Počet kamer horizontálně
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <input type="number" value="8" min="2" max="32" id="lfHorCamNumber">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-3">
+                        <label for="lfCamFov">
+                            FOV
+                        </label>
+                    </div>
+                    <div class="col-6 slidecontainer">
+                        <input type="range" min="1" max="180" value="90" class="slider" id="lfCamFov">
+                    </div>
+                    <div class="col-2">
+                        <label id="lfCamFovOut"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
