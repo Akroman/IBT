@@ -5,7 +5,7 @@
     <title>WebGL</title>
 </head>
 <body>
-    <div class="row" style="margin: 10px">
+    <div class="row" style="margin: 10px;">
         <div class="col-3 sideBar">
             <div class="row">
                 <div class="col-3">
@@ -160,6 +160,21 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div class="col-3">
+                        <label for="lightPositionOptions">
+                            Možnosti pozice
+                        </label>
+                    </div>
+                    <div class="col-9">
+                        <select id="lightPositionOptions">
+                            <option value="stickCamera" selected="selected">Přichytit ke kameře</option>
+                            <option value="stickLightField">Přichytit k light fieldu</option>
+                            <option value="free">Volný pohyb</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="row" style="margin-top: 20px">
                     Barva
                 </div>
@@ -276,20 +291,6 @@
                     </div>
                     <div class="col-6">
                         <input type="number" value="8" min="2" max="32" id="lfHorCamNumber">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-3">
-                        <label for="lfCamFov">
-                            FOV
-                        </label>
-                    </div>
-                    <div class="col-6 slidecontainer">
-                        <input type="range" min="1" max="180" value="90" class="slider" id="lfCamFov">
-                    </div>
-                    <div class="col-2">
-                        <label id="lfCamFovOut"></label>
                     </div>
                 </div>
             </div>

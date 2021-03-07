@@ -1,11 +1,13 @@
+import {glMatrix, vec3, mat4} from 'gl-matrix';
+import * as twgl from "twgl.js";
 import {fragmentShader} from "./fragmentShader.js";
 import {vertexShader} from "./vertexShader.js";
-import {glMatrix, vec3, mat4} from 'gl-matrix';
 import Camera from "./camera.js";
 import ObjParser from "./objParser.js";
-import * as twgl from 'twgl.js';
 import LightSource from "./lightSource";
 import Utils from "./utils";
+import LightField from "./lightField";
+import LightFieldCamera from "./lightFieldCamera";
 
 
 /**
@@ -14,13 +16,13 @@ import Utils from "./utils";
 export default class Renderer
 {
     /**
-     * Constructor initializes necessary variables (WebGL context, ObjParser, program and camera)
+     * Constructor initializes necessary variables (WebGL context, ObjParser, program, camera and light field)
      */
     constructor()
     {
-        this.canvas = document.querySelector('canvas');
+        this.canvas = document.querySelector("canvas");
         this.objParser = new ObjParser();
-        this.gl = this.canvas.getContext('webgl');
+        this.gl = this.canvas.getContext("webgl");
         if (!this.gl) {
             throw "WebGL not supported";
         }
@@ -28,6 +30,8 @@ export default class Renderer
         this.gl.useProgram(this.meshProgramInfo.program);
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
+        this.lightField = new LightField(0, 0, 0);
+        this.lightField.initCameras(8, 8);
     }
 
 
@@ -38,8 +42,8 @@ export default class Renderer
      */
     initInputs()
     {
-        document.getElementById('objUpload')
-            .addEventListener('change', (event) => {
+        document.getElementById("objUpload")
+            .addEventListener("change", (event) => {
                 const file = event.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -95,8 +99,8 @@ export default class Renderer
                         sliderValue: document.getElementById("lightFieldXPosOut")
                     },
                     lightFieldPosY: {
-                        slider: document.getElementById("lightFieldZPos"),
-                        sliderValue: document.getElementById("lightFieldZPosOut")
+                        slider: document.getElementById("lightFieldYPos"),
+                        sliderValue: document.getElementById("lightFieldYPosOut")
                     },
                     lightFieldPosZ: {
                         slider: document.getElementById("lightFieldZPos"),
@@ -114,19 +118,62 @@ export default class Renderer
             },
 
             checkboxes: {
-                cameraLookAt: document.getElementById("cameraLookAt")
+                camera: {
+                    cameraLookAt: document.getElementById("cameraLookAt")
+                }
+            },
+
+            selects: {
+                light: {
+                    lightPositionOptions: document.getElementById("lightPositionOptions")
+                }
             }
         }
 
-        for (const [inputType, sceneObject] of Object.entries(this.inputs)) {
-            for (const [sceneObjectName, inputs] of Object.entries(sceneObject)) {
-                for (const inputName of Object.keys(inputs)) {
+        /** Cycles through all inputs and initializes them */
+        for (const [inputType, sceneObjects] of Object.entries(this.inputs)) {
+            for (const [sceneObjectName, inputs] of Object.entries(sceneObjects)) {
+                for (const [inputName, input] of Object.entries(inputs)) {
                     switch (inputType) {
                         case "sliders":
                             this.initSlider(inputName, sceneObjectName);
                             break;
                         case "numbers":
-                            this.initNumber(inputName, sceneObjectName);
+                            if (sceneObjectName === "light") {
+                                this.initLightColorInput(inputName);
+                            }
+                            break;
+                        case "selects":
+                            if (inputName === "lightPositionOptions") {
+                                const renderer = this;
+                                this.disableSliders(sceneObjectName, true);
+                                input.oninput = function () {
+                                    switch (this.value) {
+                                        case "stickCamera":
+                                        case "stickLightField":
+                                            renderer.disableSliders(sceneObjectName, true);
+                                            break;
+                                        case "free":
+                                            renderer.disableSliders(sceneObjectName, false);
+                                            break;
+                                    }
+                                    renderer.render();
+                                };
+                            }
+                            break;
+                        case "checkboxes":
+                            const renderer = this;
+                            this.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
+                            input.oninput = function () {
+                                if (this.checked) {
+                                    renderer.disableSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
+                                } else {
+                                    renderer.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
+                                }
+                                renderer.render();
+                            };
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -137,16 +184,39 @@ export default class Renderer
 
 
     /**
-     * Initializes number inputs to handle changes and re-render scene
-     * @param {string} numberName
+     * Disables or enables given sliders
      * @param {string} sceneObjectName
+     * @param {boolean} disable
+     * @param {[string]} sliders
      */
-    initNumber(numberName, sceneObjectName)
+    disableSliders(sceneObjectName, disable, sliders = [])
+    {
+        for (const [sliderName, input] of Object.entries(this.inputs.sliders[sceneObjectName])) {
+            /**
+             * If sliders is not empty, set only the sliders that are contained within the array
+             * otherwise set all sliders to given value
+             */
+            if (sliders.length) {
+                if (sliders.includes(sliderName)) {
+                    input.slider.disabled = disable;
+                }
+            } else {
+                input.slider.disabled = disable;
+            }
+        }
+    }
+
+
+    /**
+     * Initializes light color inputs to handle changes and re-render scene
+     * @param {string} colorInputName
+     */
+    initLightColorInput(colorInputName)
     {
         const renderer = this;
-        this.inputs.numbers[sceneObjectName][numberName].value = Utils.convertRange(this[sceneObjectName][numberName], [0, 1], [0, 255]);
-        this.inputs.numbers[sceneObjectName][numberName].oninput = function () {
-            renderer[sceneObjectName][numberName] = Utils.convertRange(this.value, [0, 255], [0, 1]);
+        this.inputs.numbers.light[colorInputName].value = Utils.convertRange(this.light[colorInputName], [0, 1], [0, 255]);
+        this.inputs.numbers.light[colorInputName].oninput = function () {
+            renderer.light[colorInputName] = Utils.convertRange(this.value, [0, 255], [0, 1]);
             renderer.render();
         };
     }
@@ -164,9 +234,14 @@ export default class Renderer
         this.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = this.inputs.sliders[sceneObjectName][sliderName].slider.value;
         this.inputs.sliders[sceneObjectName][sliderName].slider.oninput = function () {
             renderer.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = this.value;
-            renderer[sceneObjectName][sliderName] = this.value;
+            /** Light field needs special updating because we need to update the light field cameras as well */
+            if (sceneObjectName === "lightField") {
+                renderer.lightField.updatePosition(sliderName, this.value);
+            } else {
+                renderer[sceneObjectName][sliderName] = this.value;
+            }
             renderer.render();
-        }
+        };
     }
 
 
@@ -231,19 +306,31 @@ export default class Renderer
                 worldInverseTransposeMatrix = mat4.create();
             mat4.translate(world, world, objOffset);
 
-            console.log(this.camera.viewProjectionMatrix);
             mat4.multiply(worldViewProjectionMatrix, this.camera.viewProjectionMatrix, world);
             mat4.invert(worldInverseMatrix, world);
             mat4.transpose(worldInverseTransposeMatrix, worldInverseMatrix);
+
+            let lightPosition;
+            switch (this.inputs.selects.light.lightPositionOptions.value) {
+                case "stickCamera":
+                    lightPosition = this.camera.position;
+                    break;
+                case "stickLightField":
+                    lightPosition = this.lightField.position;
+                    break;
+                case "free":
+                    lightPosition = this.light.position;
+                    break;
+            }
 
             /** Uniforms that are the same for all parts */
             const sharedUniforms = {
                 u_worldViewProjection: worldViewProjectionMatrix,
                 u_worldInverseTranspose: worldInverseTransposeMatrix,
                 u_viewWorldPosition: this.camera.position,
-                u_lightWorldPosition: this.light.position,
+                u_lightWorldPosition: lightPosition,
                 u_lightColor: this.light.color,
-                u_shininess: 150
+                u_shininess: 200
             };
             twgl.setUniforms(this.meshProgramInfo, sharedUniforms);
 
@@ -256,6 +343,23 @@ export default class Renderer
                 twgl.setBuffersAndAttributes(this.gl, this.meshProgramInfo, bufferInfo);
                 twgl.drawBufferInfo(this.gl, bufferInfo);
             }
+
+            const bufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
+            /** @param {LightFieldCamera} lfCamera */
+            const lfCameraRenderCallback = (lfCamera) => {
+                mat4.multiply(worldViewProjectionMatrix, this.camera.viewProjectionMatrix, lfCamera.positionMatrix);
+                mat4.invert(worldInverseMatrix, lfCamera.positionMatrix);
+                mat4.transpose(worldInverseTransposeMatrix, worldInverseMatrix);
+                twgl.setUniforms(this.meshProgramInfo, {
+                    u_worldViewProjection: worldViewProjectionMatrix,
+                    u_worldInverseTranspose: worldInverseTransposeMatrix,
+                    u_world: lfCamera.positionMatrix
+                });
+
+                twgl.setBuffersAndAttributes(this.gl, this.meshProgramInfo, bufferInfo);
+                twgl.drawBufferInfo(this.gl, bufferInfo, this.gl.LINES);
+            };
+            this.lightField.iterateCameras(lfCameraRenderCallback);
         }
     }
 }

@@ -34,19 +34,13 @@ export default class Camera
     /**
      * @returns {mat4}
      */
-    get viewMatrix() { return mat4.invert(this.cameraMatrix, this.cameraMatrix); }
-
-
-    /**
-     * @returns {mat4}
-     */
     get viewProjectionMatrix()
     {
         if (this.projectionMatrix === undefined) {
             throw new InvalidCameraStateException("Error: projection matrix must be set to get viewProjectionMatrix (either use setPerspective or setOrthographic");
         }
         let viewProjectionMatrix = mat4.create();
-        mat4.multiply(viewProjectionMatrix, this.projectionMatrix, this.viewMatrix);
+        mat4.multiply(viewProjectionMatrix, this.projectionMatrix, this.cameraMatrix);
         return viewProjectionMatrix;
     }
 
