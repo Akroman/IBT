@@ -36,15 +36,15 @@ export default class LightField
      * @param {number} horizontalCamerasCount
      * @param {number} verticalCamerasCount
      */
-    initCameras(horizontalCamerasCount, verticalCamerasCount)
+    initCameras(horizontalCamerasCount = this.horizontalCamerasCount, verticalCamerasCount = this.verticalCamerasCount)
     {
         this.cameraArray = [];
         this.horizontalCamerasCount = horizontalCamerasCount;
         this.verticalCamerasCount = verticalCamerasCount;
 
-        const initialXPosition = horizontalCamerasCount / 2 * this.distanceBetweenCameras + this.lightFieldPosX;
+        const initialXPosition = this.lightFieldPosX;
         let xPosition = initialXPosition;
-        let yPosition = verticalCamerasCount / 2 * this.distanceBetweenCameras + this.lightFieldPosY;
+        let yPosition = this.lightFieldPosY;
         const zPosition = this.lightFieldPosZ;
         let lightFieldCameraPosition = vec3.fromValues(
             initialXPosition,
@@ -87,8 +87,42 @@ export default class LightField
     {
         for (let row = 0; row < this.horizontalCamerasCount; row++) {
             for (let column = 0; column < this.verticalCamerasCount; column++) {
-                callback(this.cameraArray[row][column]);
+                callback(this.getCamera(row, column), row, column);
             }
         }
+    }
+
+
+    /**
+     * @param {number} row
+     * @param {number} column
+     * @returns {LightFieldCamera}
+     */
+    getCamera(row, column) { return this.cameraArray[row][column]; }
+
+
+    /**
+     * @param {number} row
+     * @param {number} column
+     */
+    setSelectedCamera(row, column)
+    {
+        this.selectedCamera.selected = false;
+        this.getCamera(row, column).selected = true;
+    }
+
+
+    /**
+     * @returns {LightFieldCamera}
+     */
+    get selectedCamera()
+    {
+        let selectedCamera;
+        this.iterateCameras((camera) => {
+            if (camera.selected) {
+                selectedCamera = camera;
+            }
+        });
+        return selectedCamera;
     }
 }

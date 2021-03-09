@@ -10,9 +10,9 @@ export default class Camera
 {
     /**
      * Constructor creates camera matrix and sets initial position of the camera
-     * @param {int} positionX
-     * @param {int} positionY
-     * @param {int} positionZ
+     * @param {number} positionX
+     * @param {number} positionY
+     * @param {number} positionZ
      */
     constructor(positionX, positionY, positionZ)
     {
@@ -46,6 +46,29 @@ export default class Camera
 
 
     /**
+     * @param {mat4} world
+     */
+    getWorldViewProjectionMatrix(world)
+    {
+        let worldViewProjectionMatrix = mat4.create();
+        mat4.multiply(worldViewProjectionMatrix, this.viewProjectionMatrix, world);
+        return worldViewProjectionMatrix;
+    }
+
+
+    /**
+     * @param {mat4} world
+     */
+    getWorldInverseTransposeMatrix(world)
+    {
+        let worldInverseTransposeMatrix = mat4.create();
+        mat4.invert(world, world);
+        mat4.transpose(worldInverseTransposeMatrix, world);
+        return worldInverseTransposeMatrix;
+    }
+
+
+    /**
      * @returns {vec3}
      */
     get direction()
@@ -63,10 +86,10 @@ export default class Camera
 
 
     /**
-     * @param {int} fieldOfView
-     * @param {int} aspect
-     * @param {int} zNear
-     * @param {int} zFar
+     * @param {number} fieldOfView
+     * @param {number} aspect
+     * @param {number} zNear
+     * @param {number} zFar
      * @returns {Camera}
      */
     setPerspective(fieldOfView, aspect, zNear, zFar)

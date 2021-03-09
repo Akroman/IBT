@@ -16,16 +16,17 @@ export default class LightFieldCamera extends Camera
     constructor(positionX, positionY, positionZ)
     {
         super(positionX, positionY, positionZ);
+        this.selected = false;
     }
 
 
     /**
-     * Static method to get buffer info for a camera
+     * Method to get buffer info for a camera
      * @param {WebGLRenderingContext} gl
      * @param {number} scale
      * @returns {BufferInfo}
      */
-    static getBufferInfo(gl, scale = 1)
+    getBufferInfo(gl, scale = 1)
     {
         const positions = [
             -1, -1, 1,  // Cube vertices
@@ -63,7 +64,7 @@ export default class LightFieldCamera extends Camera
         });
         return twgl.createBufferInfoFromArrays(gl, {
             position: positions,
-            color: [1, 1, 1, 0],
+            color: this.selected ? [1, 0, 0, 1] : [0, 0, 0, 1],
             indices
         });
     }

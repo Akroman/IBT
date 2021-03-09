@@ -76,7 +76,7 @@
                 <div class="row" style="margin-top: 20px">
                     <div class="col-6">
                         <label for="cameraLookAt">Zaměřit na objekt</label>
-                        <input type="checkbox" name="cameraRotation" value="cameraLookAt" id="cameraLookAt">
+                        <input type="checkbox" name="cameraRotation" id="cameraLookAt" checked>
                     </div>
                 </div>
 
@@ -291,6 +291,17 @@
                     </div>
                     <div class="col-6">
                         <input type="number" value="8" min="2" max="32" id="lfHorCamNumber">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <label for="lfCameraSelection">
+                            Výběr pohledu kamery
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <select id="lfCameraSelection"></select>
                     </div>
                 </div>
             </div>
