@@ -1,7 +1,7 @@
 import {glMatrix, vec3, mat4} from 'gl-matrix';
 import * as twgl from "twgl.js";
-import {fragmentShader} from "./fragmentShader.js";
-import {vertexShader} from "./vertexShader.js";
+import {fragmentShader, simpleFragmentShader} from "./fragmentShader.js";
+import {vertexShader, simpleVertexShader} from "./vertexShader.js";
 import Camera from "./camera.js";
 import ObjParser from "./objParser.js";
 import LightSource from "./lightSource";
@@ -21,13 +21,24 @@ export default class Renderer
     constructor()
     {
         this.canvas = document.querySelector("canvas");
-        this.objParser = new ObjParser();
         this.gl = this.canvas.getContext("webgl");
         if (!this.gl) {
-            throw "WebGL not supported";
+            throw Error("WebGL not supported");
         }
-        this.meshProgramInfo = twgl.createProgramInfo(this.gl, [vertexShader, fragmentShader]);
-        this.gl.useProgram(this.meshProgramInfo.program);
+
+        /**
+         * Main program using the regular shaders with textures and lights
+         * @type {ProgramInfo}
+         */
+        this.mainProgramInfo = twgl.createProgramInfo(this.gl, [vertexShader, fragmentShader]);
+
+        /**
+         * Second program using the simplified shaders without textures and lights
+         * @type {ProgramInfo}
+         */
+        this.secondaryProgramInfo = twgl.createProgramInfo(this.gl, [simpleVertexShader, simpleFragmentShader]);
+
+        this.objParser = new ObjParser();
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
         this.lightField = new LightField(0, 0, 0);
@@ -153,11 +164,10 @@ export default class Renderer
                             } else if (sceneObjectName === "lightField") {
                                 input.value = this.lightField[inputName];
                                 this.lightField.initCameras();
-                                this.updateLightFieldCameraSelection();
                                 input.oninput = function () {
                                     renderer.lightField.initCameras(
-                                        renderer.inputs.numbers.lightField.horizontalCamerasCount.value,
-                                        renderer.inputs.numbers.lightField.verticalCamerasCount.value
+                                        parseInt(renderer.inputs.numbers.lightField.horizontalCamerasCount.value),
+                                        parseInt(renderer.inputs.numbers.lightField.verticalCamerasCount.value)
                                     );
                                     renderer.updateLightFieldCameraSelection();
                                     renderer.render();
@@ -167,7 +177,7 @@ export default class Renderer
                         case "selects":
                             if (inputName === "lightPositionOptions") {
                                 this.disableSliders(sceneObjectName, true);
-                                input.oninput = function () {
+                                input.onchange = function () {
                                     switch (this.value) {
                                         case "stickCamera":
                                         case "stickLightField":
@@ -179,11 +189,14 @@ export default class Renderer
                                     }
                                     renderer.render();
                                 };
-                            } else if (inputName === "lightField") {
+                            } else if (inputName === "lightFieldCameraSelection") {
                                 this.lightField.setSelectedCamera(0, 0);
-                                input.oninput = function () {
+                                this.updateLightFieldCameraSelection();
+                                input.onchange = function () {
                                     const rowAndColumn = this.value.split("_");
-                                    renderer.lightField.setSelectedCamera(rowAndColumn[0], rowAndColumn[1]);
+                                    const row = parseInt(rowAndColumn[0]);
+                                    const column = parseInt(rowAndColumn[1]);
+                                    renderer.lightField.setSelectedCamera(row, column);
                                     renderer.render();
                                 };
                             }
@@ -193,9 +206,9 @@ export default class Renderer
                                 this.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
                                 input.oninput = function () {
                                     if (this.checked) {
-                                        renderer.disableSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
-                                    } else {
                                         renderer.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
+                                    } else {
+                                        renderer.disableSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
                                     }
                                     renderer.render();
                                 };
@@ -216,18 +229,24 @@ export default class Renderer
      */
     updateLightFieldCameraSelection()
     {
+        const [selectedRow, selectedColumn] = this.lightField.selectedCameraIndex;
         const optionsCount = this.inputs.selects.lightField.lightFieldCameraSelection.length - 1;
+
+        /** First remove all the options */
         for (let optionIndex = optionsCount; optionIndex >= 0; optionIndex--) {
             this.inputs.selects.lightField.lightFieldCameraSelection.remove(optionIndex);
         }
+
+        /** And then iterate over all the cameras and add the to the selection */
         this.lightField.iterateCameras((camera, row, column) => {
             const option = document.createElement("option");
             option.value = row + "_" + column;
             row++;
             column++;
-            option.text = "Kamera: " + row + " " + column;
+            option.text = "Kamera: " + row + "-" + column;
             this.inputs.selects.lightField.lightFieldCameraSelection.add(option);
         });
+        this.inputs.selects.lightField.lightFieldCameraSelection.value = selectedRow + "_" + selectedColumn;
     }
 
 
@@ -264,7 +283,7 @@ export default class Renderer
         const renderer = this;
         this.inputs.numbers.light[colorInputName].value = Utils.convertRange(this.light[colorInputName], [0, 1], [0, 255]);
         this.inputs.numbers.light[colorInputName].oninput = function () {
-            renderer.light[colorInputName] = Utils.convertRange(this.value, [0, 255], [0, 1]);
+            renderer.light[colorInputName] = Utils.convertRange(parseInt(this.value), [0, 255], [0, 1]);
             renderer.render();
         };
     }
@@ -281,12 +300,13 @@ export default class Renderer
         this.inputs.sliders[sceneObjectName][sliderName].slider.value = this[sceneObjectName][sliderName];
         this.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = this.inputs.sliders[sceneObjectName][sliderName].slider.value;
         this.inputs.sliders[sceneObjectName][sliderName].slider.oninput = function () {
-            renderer.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = this.value;
+            const value = parseInt(this.value);
+            renderer.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = value;
             /** Light field needs special updating because we need to update the light field cameras as well */
             if (sceneObjectName === "lightField") {
-                renderer.lightField.updatePosition(sliderName, this.value);
+                renderer.lightField.updatePosition(sliderName, value);
             } else {
-                renderer[sceneObjectName][sliderName] = this.value;
+                renderer[sceneObjectName][sliderName] = value;
             }
             renderer.render();
         };
@@ -300,6 +320,7 @@ export default class Renderer
     render()
     {
         /** Set background color */
+        this.gl.useProgram(this.mainProgramInfo.program);
         this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -325,21 +346,22 @@ export default class Renderer
                 zNear = 1,
                 zFar = 5000;
 
-            const cameraTarget = vec3.fromValues(0, 0, 0);
-            const up = vec3.fromValues(0, 1.0, 0);
+            const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
+                ? vec3.fromValues(0, 0, 0)
+                : this.camera.direction;
 
+            /** On the upper half of canvas draw view from the camera */
             twgl.resizeCanvasToDisplaySize(this.gl.canvas);
             const {width, height} = this.gl.canvas;
             const halfHeight = height / 2;
 
-            // draw on the left with orthographic camera
             this.gl.viewport(0, halfHeight, width, halfHeight);
             this.gl.scissor(0, halfHeight, width, halfHeight);
 
             /** Matrix logic around camera */
             this.camera.setPerspective(fieldOfView, aspect, zNear, zFar)
                 .move()
-                .lookAt(cameraTarget, up);
+                .lookAt(cameraTarget);
 
             /** Create buffers and custom uniforms for all the geometries */
             const infoBuffers = this.objData.geometries.map(({data}) => {
@@ -374,7 +396,7 @@ export default class Renderer
             }
 
             /** Uniforms that are the same for all parts */
-            const sharedUniforms = {
+            let sharedUniforms = {
                 u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(world),
                 u_worldInverseTranspose: this.camera.getWorldInverseTransposeMatrix(world),
                 u_viewWorldPosition: this.camera.position,
@@ -382,37 +404,68 @@ export default class Renderer
                 u_lightColor: this.light.color,
                 u_shininess: 150
             };
-            twgl.setUniforms(this.meshProgramInfo, sharedUniforms);
+            twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
 
             /** Sets uniforms, attributes and calls method for drawing */
             for (const bufferInfo of infoBuffers) {
-                twgl.setUniforms(this.meshProgramInfo, {
+                twgl.setUniforms(this.mainProgramInfo, {
                     u_world: world
                 });
 
-                twgl.setBuffersAndAttributes(this.gl, this.meshProgramInfo, bufferInfo);
+                twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
                 twgl.drawBufferInfo(this.gl, bufferInfo);
             }
 
-            /** @param {LightFieldCamera} lfCamera */
+            /**
+             * Iterate over cameras and draw them with the simple shaders
+             * @param {LightFieldCamera} lfCamera
+             */
             const lfCameraRenderCallback = (lfCamera) => {
-                twgl.setUniforms(this.meshProgramInfo, {
+                twgl.setUniforms(this.secondaryProgramInfo, {
                     u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
-                    u_worldInverseTranspose: this.camera.getWorldInverseTransposeMatrix(lfCamera.positionMatrix),
-                    u_world: lfCamera.positionMatrix
+                    u_color: lfCamera.selected ? [1, 0, 0, 1] : [0, 0, 0, 1]
                 });
 
                 const lfCameraBufferInfo = lfCamera.getBufferInfo(this.gl, 0.5);
-                twgl.setBuffersAndAttributes(this.gl, this.meshProgramInfo, lfCameraBufferInfo);
+                twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, lfCameraBufferInfo);
                 twgl.drawBufferInfo(this.gl, lfCameraBufferInfo, this.gl.LINES);
             };
+            this.gl.useProgram(this.secondaryProgramInfo.program);
             this.lightField.iterateCameras(lfCameraRenderCallback);
 
-            /*
+            /** On the lower half of canvas draw view from selected light field camera */
+            this.gl.useProgram(this.mainProgramInfo.program);
             this.gl.viewport(0, 0, width, halfHeight);
             this.gl.scissor(0, 0, width, halfHeight);
-            */
 
+            /** Proceed to draw only if user has selected a camera */
+            const lfCamera = this.lightField.selectedCamera;
+            if (lfCamera) {
+                lfCamera.setPerspective(fieldOfView, aspect, zNear, zFar)
+                    .move();
+
+                world = mat4.create();
+                mat4.translate(world, world, objOffset);
+
+                sharedUniforms = {
+                    u_worldViewProjection: lfCamera.getWorldViewProjectionMatrix(world),
+                    u_worldInverseTranspose: lfCamera.getWorldInverseTransposeMatrix(world),
+                    u_viewWorldPosition: lfCamera.position,
+                    u_lightWorldPosition: lightPosition,
+                    u_lightColor: this.light.color,
+                    u_shininess: 150
+                };
+                twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
+
+                for (const bufferInfo of infoBuffers) {
+                    twgl.setUniforms(this.mainProgramInfo, {
+                        u_world: world
+                    });
+
+                    twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
+                    twgl.drawBufferInfo(this.gl, bufferInfo);
+                }
+            }
         }
     }
 }

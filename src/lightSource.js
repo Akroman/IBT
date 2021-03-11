@@ -1,8 +1,9 @@
-/**
- *
- */
 import {vec3} from "gl-matrix";
 
+
+/**
+ * Class representing source of light in the scene
+ */
 export default class LightSource
 {
     /**

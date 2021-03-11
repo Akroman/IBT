@@ -64,7 +64,6 @@ export default class LightFieldCamera extends Camera
         });
         return twgl.createBufferInfoFromArrays(gl, {
             position: positions,
-            color: this.selected ? [1, 0, 0, 1] : [0, 0, 0, 1],
             indices
         });
     }

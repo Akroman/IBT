@@ -1,3 +1,7 @@
+/**
+ * Main fragment shader, used for rendering scene with both the normal camera and the light field cameras
+ * @type {string}
+ */
 export const fragmentShader = `
     precision mediump float;
 
@@ -9,7 +13,8 @@ export const fragmentShader = `
     uniform float u_shininess;
     uniform vec3 u_lightColor;
 
-    void main() {
+    void main() 
+    {
         vec3 normal = normalize(v_normal);
         vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
         vec3 surfaceToViewDirection = normalize(v_surfaceToView);
@@ -23,5 +28,22 @@ export const fragmentShader = `
         gl_FragColor = v_color;
         gl_FragColor.rgb *= light * u_lightColor;
         gl_FragColor.rgb += specular * u_lightColor;
+    }
+`;
+
+
+/**
+ * Fragment shader without lights or textures, used for rendering light field as viewed from the normal camera
+ * (there is no need to project light or textures onto the cameras)
+ * @type {string}
+ */
+export const simpleFragmentShader = `
+    precision mediump float;
+
+    uniform vec4 u_color;
+
+    void main() 
+    {
+        gl_FragColor = u_color;
     }
 `;

@@ -32,12 +32,18 @@ export default class Camera
 
 
     /**
+     * @param {vec3} position
+     */
+    set position(position) { [this.cameraPosX, this.cameraPosY, this.cameraPosZ] = position; }
+
+
+    /**
      * @returns {mat4}
      */
     get viewProjectionMatrix()
     {
         if (this.projectionMatrix === undefined) {
-            throw new InvalidCameraStateException("Error: projection matrix must be set to get viewProjectionMatrix (either use setPerspective or setOrthographic");
+            throw new InvalidCameraStateException("Error: projection matrix must be set to get viewProjectionMatrix (use setPerspective)");
         }
         let viewProjectionMatrix = mat4.create();
         mat4.multiply(viewProjectionMatrix, this.projectionMatrix, this.cameraMatrix);
@@ -73,15 +79,15 @@ export default class Camera
      */
     get direction()
     {
-        let frontVector = vec3.fromValues(
+        let front = vec3.fromValues(
             Math.cos(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch)),
             Math.sin(glMatrix.toRadian(this.cameraPitch)),
             Math.sin(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch))
         );
-        let lookAtVector = vec3.create();
-        vec3.normalize(lookAtVector, frontVector);
-        vec3.add(lookAtVector, lookAtVector, this.position);
-        return lookAtVector;
+        vec3.normalize(front, front);
+        let direction = vec3.create();
+        vec3.add(direction, this.position, front);
+        return direction;
     }
 
 
@@ -106,7 +112,7 @@ export default class Camera
      * @param {vec3} up
      * @returns {Camera}
      */
-    lookAt(target, up)
+    lookAt(target, up = vec3.fromValues(0, 1.0, 0))
     {
         mat4.lookAt(this.cameraMatrix, this.position, target, up);
         return this;
@@ -120,8 +126,10 @@ export default class Camera
      */
     move(position = this.position)
     {
-        [this.cameraPosX, this.cameraPosY, this.cameraPosZ] = position;
+        this.position = position;
+        this.cameraMatrix = mat4.create();
         mat4.translate(this.cameraMatrix, this.cameraMatrix, position);
+        mat4.invert(this.cameraMatrix, this.cameraMatrix);
         return this;
     }
 }

@@ -38,20 +38,20 @@ export default class LightField
      */
     initCameras(horizontalCamerasCount = this.horizontalCamerasCount, verticalCamerasCount = this.verticalCamerasCount)
     {
+        const [selectedRow, selectedColumn] = !this.cameraArray.length
+            ? [0, 0]
+            : this.selectedCameraIndex;
+
         this.cameraArray = [];
         this.horizontalCamerasCount = horizontalCamerasCount;
         this.verticalCamerasCount = verticalCamerasCount;
 
-        const initialXPosition = this.lightFieldPosX;
-        let xPosition = initialXPosition;
-        let yPosition = this.lightFieldPosY;
         const zPosition = this.lightFieldPosZ;
-        let lightFieldCameraPosition = vec3.fromValues(
-            initialXPosition,
-            yPosition,
-            this.lightFieldPosZ
-        );
+        let yPosition = this.lightFieldPosY;
+        let xPosition = this.lightFieldPosX;
+        let lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
 
+        /** Iterate over given number of rows and columns and create light field cameras */
         for (let row = 0; row < horizontalCamerasCount; row++) {
             this.cameraArray[row] = [];
             for (let column = 0; column < verticalCamerasCount; column++) {
@@ -59,9 +59,15 @@ export default class LightField
                 xPosition += this.distanceBetweenCameras;
                 vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
             }
-            xPosition = initialXPosition;
+            xPosition = this.lightFieldPosX;
             yPosition -= this.distanceBetweenCameras;
             vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
+        }
+
+        try {
+            this.setSelectedCamera(selectedRow, selectedColumn);
+        } catch (exception) {
+            this.setSelectedCamera(0, 0);
         }
     }
 
@@ -98,7 +104,13 @@ export default class LightField
      * @param {number} column
      * @returns {LightFieldCamera}
      */
-    getCamera(row, column) { return this.cameraArray[row][column]; }
+    getCamera(row, column)
+    {
+        if (!this.cameraArray[row][column]) {
+            throw new InvalidCameraIndexException("Invalid camera index");
+        }
+        return this.cameraArray[row][column];
+    }
 
 
     /**
@@ -107,7 +119,9 @@ export default class LightField
      */
     setSelectedCamera(row, column)
     {
-        this.selectedCamera.selected = false;
+        if (this.selectedCamera) {
+            this.selectedCamera.selected = false;
+        }
         this.getCamera(row, column).selected = true;
     }
 
@@ -117,12 +131,39 @@ export default class LightField
      */
     get selectedCamera()
     {
-        let selectedCamera;
+        let selectedCamera = null;
         this.iterateCameras((camera) => {
             if (camera.selected) {
                 selectedCamera = camera;
             }
         });
         return selectedCamera;
+    }
+
+
+    /**
+     * Returns a pair in following shape: [row, column]
+     * @returns {[number]}
+     */
+    get selectedCameraIndex()
+    {
+        let index = [];
+        this.iterateCameras((camera, row, column) => {
+            if (camera.selected) {
+                index.push(row, column);
+            }
+        });
+        return index;
+    }
+}
+
+
+
+class InvalidCameraIndexException extends Error
+{
+    constructor(message)
+    {
+        super(message);
+        this.name = "InvalidCameraIndexException";
     }
 }
