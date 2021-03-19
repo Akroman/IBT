@@ -216,7 +216,7 @@
 
         <div class="col sideBar">
             <div class="row" style="margin-top: 20px; padding-left: 20px;">
-                <h5>Light field</h5>
+                <h5>Objekt</h5>
             </div>
 
             <div class="sideBarSection">
@@ -226,43 +226,43 @@
 
                 <div class="row" style="margin-top: 20px">
                     <div class="col-1">
-                        <label for="lightFieldXPos">
+                        <label for="meshXPos">
                             X
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldXPos">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshXPos">
                     </div>
                     <div class="col-2">
-                        <label id="lightFieldXPosOut"></label>
+                        <label id="meshXPosOut"></label>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-1">
-                        <label for="lightFieldYPos">
+                        <label for="meshYPos">
                             Y
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldYPos">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshYPos">
                     </div>
                     <div class="col-2">
-                        <label id="lightFieldYPosOut"></label>
+                        <label id="meshYPosOut"></label>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-1">
-                        <label for="lightFieldZPos">
+                        <label for="meshZPos">
                             Z
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightFieldZPos">
+                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshZPos">
                     </div>
                     <div class="col-2">
-                        <label id="lightFieldZPosOut"></label>
+                        <label id="meshZPosOut"></label>
                     </div>
                 </div>
             </div>
@@ -273,34 +273,56 @@
                 </div>
 
                 <div class="row" style="margin-top: 20px">
-                    <div class="col-6">
+                    <div class="col-8">
                         <label for="lfVertCamNumber">
                             Počet kamer vertikálně
                         </label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <input type="number" value="8" min="2" max="32" id="lfVertCamNumber">
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-6">
+                <div class="row" style="margin-top: 10px">
+                    <div class="col-8">
                         <label for="lfHorCamNumber">
                             Počet kamer horizontálně
                         </label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <input type="number" value="8" min="2" max="32" id="lfHorCamNumber">
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-6">
+                <div class="row" style="margin-top: 10px">
+                    <div class="col-8">
+                        <label for="lfHorCamSpace">
+                            Horizontální mezera mezi kamerami
+                        </label>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" step="0.1" value="1" min="1" max="32" id="lfHorCamSpace">
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 10px">
+                    <div class="col-8">
+                        <label for="lfVertCamSpace">
+                            Vertikální mezera mezi kamerami
+                        </label>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" step="0.1" value="1" min="1" max="32" id="lfVertCamSpace">
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 10px">
+                    <div class="col-7">
                         <label for="lfCameraSelection">
                             Výběr pohledu kamery
                         </label>
                     </div>
-                    <div class="col-6">
+                    <div class="col-5">
                         <select id="lfCameraSelection"></select>
                     </div>
                 </div>

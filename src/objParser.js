@@ -1,3 +1,6 @@
+import Mesh from "./mesh";
+
+
 /**
  * Class for parsing data from .obj files
  */
@@ -7,6 +10,12 @@ export default class ObjParser
      * Constructor initializes all arrays and variables that hold parsed values from .obj file
      */
     constructor()
+    {
+        this.init();
+    }
+
+
+    init()
     {
         this.objPositions = [[0, 0, 0]];
         this.objTexcoords = [[0, 0]];
@@ -63,11 +72,7 @@ export default class ObjParser
             geometry.data = Object.fromEntries(Object.entries(geometry.data).filter(([, array]) => array.length > 0));
         }
 
-        return {
-            geometries: this.geometries,
-            materialLibs: this.materialLibs,
-            extents: this.geometriesExtents
-        };
+        return new Mesh(this.geometries, this.materialLibs);
     }
 
 
@@ -182,42 +187,5 @@ export default class ObjParser
             };
             this.geometries.push(this.geometry);
         }
-    }
-
-
-    /**
-     * Gets maximum and minimum positions from an array of positions
-     * @param {[]} positions
-     */
-    getExtents(positions)
-    {
-        const min = positions.slice(0, 3);
-        const max = positions.slice(0, 3);
-        for (let positionsIndex = 3; positionsIndex < positions.length; positionsIndex += 3) {
-            for (let positionVertexIterator = 0; positionVertexIterator < 3; positionVertexIterator++) {
-                const vertex = positions[positionsIndex + positionVertexIterator];
-                min[positionVertexIterator] = Math.min(vertex, min[positionVertexIterator]);
-                max[positionVertexIterator] = Math.max(vertex, max[positionVertexIterator]);
-            }
-        }
-        return {min, max};
-    }
-
-
-    /**
-     * Loops over all geometries that are currently held in the parser and gets extents for all the parts
-     */
-    get geometriesExtents()
-    {
-        return this.geometries.reduce(({min, max}, {data}) => {
-            const minMax = this.getExtents(data.position);
-            return {
-                min: min.map((min, index) => Math.min(minMax.min[index], min)),
-                max: max.map((max, index) => Math.max(minMax.max[index], max))
-            };
-        }, {
-            min: Array(3).fill(Number.POSITIVE_INFINITY),
-            max: Array(3).fill(Number.NEGATIVE_INFINITY)
-        });
     }
 }

@@ -1,4 +1,4 @@
-import {glMatrix, vec3, mat4} from 'gl-matrix';
+import {glMatrix, vec3} from 'gl-matrix';
 import * as twgl from "twgl.js";
 import {fragmentShader, simpleFragmentShader} from "./fragmentShader.js";
 import {vertexShader, simpleVertexShader} from "./vertexShader.js";
@@ -8,6 +8,7 @@ import LightSource from "./lightSource";
 import Utils from "./utils";
 import LightField from "./lightField";
 import LightFieldCamera from "./lightFieldCamera";
+import exampleObj from '../examples/cube.obj';
 
 
 /**
@@ -41,7 +42,8 @@ export default class Renderer
         this.objParser = new ObjParser();
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
-        this.lightField = new LightField(0, 0, 0);
+        this.lightField = new LightField(-3, 3, 15);
+        this.mesh = this.objParser.parseObj(exampleObj);
     }
 
 
@@ -57,7 +59,8 @@ export default class Renderer
                 const file = event.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    this.objData = this.objParser.parseObj(e.target.result);
+                    this.objParser.init();
+                    this.mesh = this.objParser.parseObj(e.target.result);
                     this.render();
                 };
                 reader.readAsText(file);
@@ -103,18 +106,18 @@ export default class Renderer
                     },
                 },
 
-                lightField: {
-                    lightFieldPosX: {
-                        slider: document.getElementById("lightFieldXPos"),
-                        sliderValue: document.getElementById("lightFieldXPosOut")
+                mesh: {
+                    meshPosX: {
+                        slider: document.getElementById("meshXPos"),
+                        sliderValue: document.getElementById("meshXPosOut")
                     },
-                    lightFieldPosY: {
-                        slider: document.getElementById("lightFieldYPos"),
-                        sliderValue: document.getElementById("lightFieldYPosOut")
+                    meshPosY: {
+                        slider: document.getElementById("meshYPos"),
+                        sliderValue: document.getElementById("meshYPosOut")
                     },
-                    lightFieldPosZ: {
-                        slider: document.getElementById("lightFieldZPos"),
-                        sliderValue: document.getElementById("lightFieldZPosOut")
+                    meshPosZ: {
+                        slider: document.getElementById("meshZPos"),
+                        sliderValue: document.getElementById("meshZPosOut")
                     }
                 }
             },
@@ -128,7 +131,9 @@ export default class Renderer
 
                 lightField: {
                     horizontalCamerasCount: document.getElementById("lfHorCamNumber"),
-                    verticalCamerasCount: document.getElementById("lfVertCamNumber")
+                    verticalCamerasCount: document.getElementById("lfVertCamNumber"),
+                    horizontalCameraSpace: document.getElementById("lfHorCamSpace"),
+                    verticalCameraSpace: document.getElementById("lfVertCamSpace")
                 }
             },
 
@@ -165,6 +170,9 @@ export default class Renderer
                                 input.value = this.lightField[inputName];
                                 this.lightField.initCameras();
                                 input.oninput = function () {
+                                    if (inputName.endsWith("Space")) {
+                                        renderer.lightField[inputName] = parseFloat(this.value);
+                                    }
                                     renderer.lightField.initCameras(
                                         parseInt(renderer.inputs.numbers.lightField.horizontalCamerasCount.value),
                                         parseInt(renderer.inputs.numbers.lightField.verticalCamerasCount.value)
@@ -302,12 +310,7 @@ export default class Renderer
         this.inputs.sliders[sceneObjectName][sliderName].slider.oninput = function () {
             const value = parseInt(this.value);
             renderer.inputs.sliders[sceneObjectName][sliderName].sliderValue.innerHTML = value;
-            /** Light field needs special updating because we need to update the light field cameras as well */
-            if (sceneObjectName === "lightField") {
-                renderer.lightField.updatePosition(sliderName, value);
-            } else {
-                renderer[sceneObjectName][sliderName] = value;
-            }
+            renderer[sceneObjectName][sliderName] = value;
             renderer.render();
         };
     }
@@ -324,147 +327,117 @@ export default class Renderer
         this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
-        /** Proceed to draw only if user has already uploaded .obj file and it has been parsed */
-        if (this.objData !== undefined) {
-            /** Center parsed object */
-            const extents = this.objData.extents;
-            let range = vec3.create(),
-                objOffset = vec3.create();
-            vec3.subtract(range, extents.max, extents.min);
-            vec3.scale(range, range, 0.5);
-            vec3.add(range, range, extents.min);
-            vec3.scale(objOffset, range, -1);
+        /** Initialization of necessary variables and stuff around WebGL (resizing, culling, etc.) */
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.enable(this.gl.CULL_FACE);
+        this.gl.enable(this.gl.SCISSOR_TEST);
 
-            /** Initialization of necessary variables and stuff around WebGL (resizing, culling, etc.) */
-            this.gl.enable(this.gl.DEPTH_TEST);
-            this.gl.enable(this.gl.CULL_FACE);
-            this.gl.enable(this.gl.SCISSOR_TEST);
+        const effectiveHeight = this.gl.canvas.clientHeight / 2,
+            fieldOfView = glMatrix.toRadian(60),
+            aspect = this.gl.canvas.clientWidth / effectiveHeight,
+            zNear = 1,
+            zFar = 5000;
 
-            const effectiveHeight = this.gl.canvas.clientHeight / 2,
-                fieldOfView = glMatrix.toRadian(60),
-                aspect = this.gl.canvas.clientWidth / effectiveHeight,
-                zNear = 1,
-                zFar = 5000;
+        this.mesh.move();
 
-            const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
-                ? vec3.fromValues(0, 0, 0)
-                : this.camera.direction;
+        const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
+            ? vec3.fromValues(0, 0, 0)
+            : this.camera.direction;
 
-            /** On the upper half of canvas draw view from the camera */
-            twgl.resizeCanvasToDisplaySize(this.gl.canvas);
-            const {width, height} = this.gl.canvas;
-            const halfHeight = height / 2;
+        /** On the upper half of canvas draw view from the camera */
+        twgl.resizeCanvasToDisplaySize(this.gl.canvas);
+        const {width, height} = this.gl.canvas;
+        const halfHeight = height / 2;
 
-            this.gl.viewport(0, halfHeight, width, halfHeight);
-            this.gl.scissor(0, halfHeight, width, halfHeight);
+        this.gl.viewport(0, halfHeight, width, halfHeight);
+        this.gl.scissor(0, halfHeight, width, halfHeight);
 
-            /** Matrix logic around camera */
-            this.camera.setPerspective(fieldOfView, aspect, zNear, zFar)
-                .move()
-                .lookAt(cameraTarget);
+        /** Matrix logic around camera */
+        this.camera.setPerspective(fieldOfView, aspect, zNear, zFar)
+            .move()
+            .lookAt(cameraTarget);
 
-            /** Create buffers and custom uniforms for all the geometries */
-            const infoBuffers = this.objData.geometries.map(({data}) => {
-                if (data.color) {
-                    if (data.position.length === data.color.length) {
-                        data.color = {
-                            numComponents: 3,
-                            data: data.color
-                        };
-                    }
-                } else {
-                    data.color = {value: [0, 0.7, 0, 1]};
-                }
+        /** Create buffers and custom uniforms for all the geometries */
+        const infoBuffers = this.mesh.getBufferInfo(this.gl);
 
-                return twgl.createBufferInfoFromArrays(this.gl, data);
+        let lightPosition;
+        switch (this.inputs.selects.light.lightPositionOptions.value) {
+            case "stickCamera":
+                lightPosition = this.camera.position;
+                break;
+            case "stickLightField":
+                lightPosition = this.lightField.position;
+                break;
+            case "free":
+                lightPosition = this.light.position;
+                break;
+        }
+
+        /** Uniforms that are the same for all parts */
+        let sharedUniforms = {
+            u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(this.mesh.meshMatrix),
+            u_worldInverseTranspose: this.mesh.inverseTransposeMatrix,
+            u_viewWorldPosition: this.camera.position,
+            u_lightWorldPosition: lightPosition,
+            u_lightColor: this.light.color,
+            u_shininess: 150
+        };
+        twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
+
+        /** Sets uniforms, attributes and calls method for drawing */
+        for (const bufferInfo of infoBuffers) {
+            twgl.setUniforms(this.mainProgramInfo, {
+                u_world: this.mesh.meshMatrix
             });
 
-            let world = mat4.create();
-            mat4.translate(world, world, objOffset);
+            twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
+            twgl.drawBufferInfo(this.gl, bufferInfo);
+        }
 
-            let lightPosition;
-            switch (this.inputs.selects.light.lightPositionOptions.value) {
-                case "stickCamera":
-                    lightPosition = this.camera.position;
-                    break;
-                case "stickLightField":
-                    lightPosition = this.lightField.position;
-                    break;
-                case "free":
-                    lightPosition = this.light.position;
-                    break;
-            }
+        /**
+         * Iterate over cameras and draw them with the simple shaders
+         * @param {LightFieldCamera} lfCamera
+         */
+        const lfCameraRenderCallback = (lfCamera) => {
+            twgl.setUniforms(this.secondaryProgramInfo, {
+                u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
+                u_color: lfCamera.selected ? [1, 0, 0, 1] : [0, 0, 0, 1]
+            });
 
-            /** Uniforms that are the same for all parts */
-            let sharedUniforms = {
-                u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(world),
-                u_worldInverseTranspose: this.camera.getWorldInverseTransposeMatrix(world),
-                u_viewWorldPosition: this.camera.position,
+            const lfCameraBufferInfo = lfCamera.getBufferInfo(this.gl, 0.5);
+            twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, lfCameraBufferInfo);
+            twgl.drawBufferInfo(this.gl, lfCameraBufferInfo, this.gl.LINES);
+        };
+        this.gl.useProgram(this.secondaryProgramInfo.program);
+        this.lightField.iterateCameras(lfCameraRenderCallback);
+
+        /** On the lower half of canvas draw view from selected light field camera */
+        this.gl.useProgram(this.mainProgramInfo.program);
+        this.gl.viewport(0, 0, width, halfHeight);
+        this.gl.scissor(0, 0, width, halfHeight);
+
+        /** Proceed to draw only if user has selected a camera */
+        const lfCamera = this.lightField.selectedCamera;
+        if (lfCamera) {
+            lfCamera.setPerspective(fieldOfView, aspect, zNear, zFar);
+
+            sharedUniforms = {
+                u_worldViewProjection: lfCamera.getWorldViewProjectionMatrix(this.mesh.meshMatrix),
+                u_worldInverseTranspose: this.mesh.inverseTransposeMatrix,
+                u_viewWorldPosition: lfCamera.position,
                 u_lightWorldPosition: lightPosition,
                 u_lightColor: this.light.color,
                 u_shininess: 150
             };
             twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
 
-            /** Sets uniforms, attributes and calls method for drawing */
             for (const bufferInfo of infoBuffers) {
                 twgl.setUniforms(this.mainProgramInfo, {
-                    u_world: world
+                    u_world: this.mesh.meshMatrix
                 });
 
                 twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
                 twgl.drawBufferInfo(this.gl, bufferInfo);
-            }
-
-            /**
-             * Iterate over cameras and draw them with the simple shaders
-             * @param {LightFieldCamera} lfCamera
-             */
-            const lfCameraRenderCallback = (lfCamera) => {
-                twgl.setUniforms(this.secondaryProgramInfo, {
-                    u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
-                    u_color: lfCamera.selected ? [1, 0, 0, 1] : [0, 0, 0, 1]
-                });
-
-                const lfCameraBufferInfo = lfCamera.getBufferInfo(this.gl, 0.5);
-                twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, lfCameraBufferInfo);
-                twgl.drawBufferInfo(this.gl, lfCameraBufferInfo, this.gl.LINES);
-            };
-            this.gl.useProgram(this.secondaryProgramInfo.program);
-            this.lightField.iterateCameras(lfCameraRenderCallback);
-
-            /** On the lower half of canvas draw view from selected light field camera */
-            this.gl.useProgram(this.mainProgramInfo.program);
-            this.gl.viewport(0, 0, width, halfHeight);
-            this.gl.scissor(0, 0, width, halfHeight);
-
-            /** Proceed to draw only if user has selected a camera */
-            const lfCamera = this.lightField.selectedCamera;
-            if (lfCamera) {
-                lfCamera.setPerspective(fieldOfView, aspect, zNear, zFar)
-                    .move();
-
-                world = mat4.create();
-                mat4.translate(world, world, objOffset);
-
-                sharedUniforms = {
-                    u_worldViewProjection: lfCamera.getWorldViewProjectionMatrix(world),
-                    u_worldInverseTranspose: lfCamera.getWorldInverseTransposeMatrix(world),
-                    u_viewWorldPosition: lfCamera.position,
-                    u_lightWorldPosition: lightPosition,
-                    u_lightColor: this.light.color,
-                    u_shininess: 150
-                };
-                twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
-
-                for (const bufferInfo of infoBuffers) {
-                    twgl.setUniforms(this.mainProgramInfo, {
-                        u_world: world
-                    });
-
-                    twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
-                    twgl.drawBufferInfo(this.gl, bufferInfo);
-                }
             }
         }
     }

@@ -63,18 +63,6 @@ export default class Camera
 
 
     /**
-     * @param {mat4} world
-     */
-    getWorldInverseTransposeMatrix(world)
-    {
-        let worldInverseTransposeMatrix = mat4.create();
-        mat4.invert(world, world);
-        mat4.transpose(worldInverseTransposeMatrix, world);
-        return worldInverseTransposeMatrix;
-    }
-
-
-    /**
      * @returns {vec3}
      */
     get direction()

@@ -20,7 +20,8 @@ export default class LightField
         this.lightFieldPosZ = positionZ;
         this.horizontalCamerasCount = 8;
         this.verticalCamerasCount = 8;
-        this.distanceBetweenCameras = 1.5;
+        this.horizontalCameraSpace = 1;
+        this.verticalCameraSpace = 1;
         this.cameraArray = [];
     }
 
@@ -52,15 +53,15 @@ export default class LightField
         let lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
 
         /** Iterate over given number of rows and columns and create light field cameras */
-        for (let row = 0; row < horizontalCamerasCount; row++) {
+        for (let row = 0; row < verticalCamerasCount; row++) {
             this.cameraArray[row] = [];
-            for (let column = 0; column < verticalCamerasCount; column++) {
+            for (let column = 0; column < horizontalCamerasCount; column++) {
                 this.cameraArray[row][column] = new LightFieldCamera(...lightFieldCameraPosition);
-                xPosition += this.distanceBetweenCameras;
+                xPosition += this.horizontalCameraSpace;
                 vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
             }
             xPosition = this.lightFieldPosX;
-            yPosition -= this.distanceBetweenCameras;
+            yPosition -= this.verticalCameraSpace;
             vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
         }
 
@@ -91,8 +92,8 @@ export default class LightField
      */
     iterateCameras(callback)
     {
-        for (let row = 0; row < this.horizontalCamerasCount; row++) {
-            for (let column = 0; column < this.verticalCamerasCount; column++) {
+        for (let row = 0; row < this.verticalCamerasCount; row++) {
+            for (let column = 0; column < this.horizontalCamerasCount; column++) {
                 callback(this.getCamera(row, column), row, column);
             }
         }
