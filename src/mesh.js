@@ -72,7 +72,7 @@ export default class Mesh
     move(position = this.position)
     {
         this.position = position;
-        console.log(this.position);
+        this.meshMatrix = mat4.create();
         mat4.translate(this.meshMatrix, this.meshMatrix, position);
     }
 

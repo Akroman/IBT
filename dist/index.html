@@ -18,6 +18,12 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-12">
+                    <button class="btn btn-secondary" type="button" id="exportLf">Vytvořit light field</button>
+                </div>
+            </div>
+
             <div class="row" style="margin-top: 20px; padding-left: 20px;">
                 <h5>Kamera</h5>
             </div>
@@ -34,7 +40,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraXPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="cameraXPos">
                     </div>
                     <div class="col-2">
                         <label id="cameraXPosOut"></label>
@@ -48,7 +54,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraYPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="cameraYPos">
                     </div>
                     <div class="col-2">
                         <label id="cameraYPosOut"></label>
@@ -62,7 +68,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="cameraZPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="cameraZPos">
                     </div>
                     <div class="col-2">
                         <label id="cameraZPosOut"></label>
@@ -87,7 +93,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-90" max="90" value="0" class="slider" id="cameraPitch">
+                        <input type="range" step="0.1" min="-90" max="90" value="0" class="slider" id="cameraPitch">
                     </div>
                     <div class="col-2">
                         <label id="cameraPitchOut"></label>
@@ -101,7 +107,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-90" max="90" value="0" class="slider" id="cameraYaw">
+                        <input type="range" step="0.1" min="-90" max="90" value="0" class="slider" id="cameraYaw">
                     </div>
                     <div class="col-2">
                         <label id="cameraYawOut"></label>
@@ -125,7 +131,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightXPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightXPos">
                     </div>
                     <div class="col-2">
                         <label id="lightXPosOut"></label>
@@ -139,7 +145,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightYPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightYPos">
                     </div>
                     <div class="col-2">
                         <label id="lightYPosOut"></label>
@@ -153,7 +159,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="lightZPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightZPos">
                     </div>
                     <div class="col-2">
                         <label id="lightZPosOut"></label>
@@ -231,7 +237,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshXPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshXPos">
                     </div>
                     <div class="col-2">
                         <label id="meshXPosOut"></label>
@@ -245,7 +251,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshYPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshYPos">
                     </div>
                     <div class="col-2">
                         <label id="meshYPosOut"></label>
@@ -259,7 +265,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" min="-50" max="50" value="0" class="slider" id="meshZPos">
+                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshZPos">
                     </div>
                     <div class="col-2">
                         <label id="meshZPosOut"></label>
@@ -329,6 +335,6 @@
             </div>
         </div>
     </div>
-    <script src="main.js"></script>
+    <script type="text/javascript" src="main.js"></script>
 </body>
 </html>

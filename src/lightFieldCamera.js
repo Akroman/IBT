@@ -26,7 +26,7 @@ export default class LightFieldCamera extends Camera
      * @param {number} scale
      * @returns {BufferInfo}
      */
-    getBufferInfo(gl, scale = 1)
+    static getBufferInfo(gl, scale = 1)
     {
         const positions = [
             -1, -1, 1,  // Cube vertices
