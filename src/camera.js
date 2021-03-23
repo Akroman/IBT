@@ -20,7 +20,7 @@ export default class Camera
         this.cameraPosY = positionY;
         this.cameraPosZ = positionZ;
         this.cameraPitch = 0;
-        this.cameraYaw = 0;
+        this.cameraYaw = -90;
         this.cameraMatrix = mat4.create();
     }
 

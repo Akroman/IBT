@@ -9,14 +9,16 @@ export default class Mesh
 {
     /**
      * @param {[Object]} geometries
-     * @param {[Object]} materialLibs
+     * @param {[String]} materialLibs
+     * @param {Object} materials
      */
-    constructor(geometries, materialLibs)
+    constructor(geometries, materialLibs, materials)
     {
         this.meshPosX = 0;
         this.meshPosY = 0;
         this.meshPosZ = 0;
         this.geometries = geometries;
+        this.materials = materials;
         this.materialLibs = materialLibs;
         this.meshMatrix = mat4.create();
         this.center();
@@ -48,9 +50,10 @@ export default class Mesh
 
 
     /**
-     * Moves mesh to the center of world space
+     * Calculates offset vector to get center of the object
+     * @returns {vec3}
      */
-    center()
+    get centerOffset()
     {
         const extents = this.geometriesExtents;
         let range = vec3.create(),
@@ -60,9 +63,14 @@ export default class Mesh
         vec3.scale(range, range, 0.5);
         vec3.add(range, range, extents.min);
         vec3.scale(objOffset, range, -1);
-
-        this.position = objOffset;
+        return objOffset;
     }
+
+
+    /**
+     * Moves mesh to the center of world space
+     */
+    center() { this.position = this.centerOffset; }
 
 
     /**
@@ -80,6 +88,7 @@ export default class Mesh
     /**
      * Gets maximum and minimum positions from an array of positions
      * @param {[]} positions
+     * @returns {Object}
      */
     getExtents(positions)
     {
@@ -98,6 +107,7 @@ export default class Mesh
 
     /**
      * Loops over all geometries and gets extents for all the parts
+     * @returns {Object}
      */
     get geometriesExtents()
     {
@@ -117,11 +127,11 @@ export default class Mesh
     /**
      * Iterates over geometries and maps colors
      * @param gl
-     * @returns {BufferInfo[]}
+     * @returns {Object}
      */
     getBufferInfo(gl)
     {
-        return this.geometries.map(({data}) => {
+        return this.geometries.map(({material, data}) => {
             if (data.color) {
                 if (data.position.length === data.color.length) {
                     data.color = {
@@ -130,10 +140,13 @@ export default class Mesh
                     };
                 }
             } else {
-                data.color = {value: [0, 0.7, 0, 1]};
+                data.color = {value: [1, 1, 1, 1]};
             }
 
-            return twgl.createBufferInfoFromArrays(gl, data);
+            return {
+                material: this.materials[material],
+                bufferInfo: twgl.createBufferInfoFromArrays(gl, data)
+            };
         });
     }
 }

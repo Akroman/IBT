@@ -15,6 +15,9 @@ export default class ObjParser
     }
 
 
+    /**
+     * Initiates all class variables to default values
+     */
     init()
     {
         this.objPositions = [[0, 0, 0]];
@@ -37,6 +40,16 @@ export default class ObjParser
         this.geometries = [];
         this.materialLibs = [];
         this.material = 'default';
+        this.materialObject = {};
+        this.materials = {
+            default: {
+                u_diffuse: [1, 1, 1],
+                u_ambient: [0, 0, 0],
+                u_specular: [1, 1, 1],
+                u_shininess: 400,
+                u_opacity: 1
+            }
+        };
         this.object = 'default';
     }
 
@@ -44,7 +57,7 @@ export default class ObjParser
     /**
      * Main function of this class, returns object with data ready to be passed for WebGL
      * @param {string} objText
-     * @returns {object} Object with data for WebGL
+     * @returns {Mesh}
      */
     parseObj(objText)
     {
@@ -72,7 +85,7 @@ export default class ObjParser
             geometry.data = Object.fromEntries(Object.entries(geometry.data).filter(([, array]) => array.length > 0));
         }
 
-        return new Mesh(this.geometries, this.materialLibs);
+        return new Mesh(this.geometries, this.materialLibs, this.materials);
     }
 
 
@@ -85,6 +98,7 @@ export default class ObjParser
     addObjData(keyword, data, unparsedArguments)
     {
         switch (keyword) {
+            /** Keywords from .obj files */
             case 'v':
                 if (data.length > 3) {
                     this.objPositions.push(data.slice(0, 3).map(parseFloat));
@@ -119,8 +133,44 @@ export default class ObjParser
             case 'o':
                 this.object = unparsedArguments;
                 break;
-            default:
 
+            /** Keywords from .mtl files */
+            case 'newmtl':
+                this.materialObject = {};
+                this.materials[unparsedArguments] = this.materialObject;
+                break;
+            case 'Ns':
+                this.materialObject.u_shininess = parseFloat(data[0]);
+                break;
+            case 'Ka':
+                this.materialObject.u_ambient = data.map(parseFloat);
+                break;
+            case 'Kd':
+                this.materialObject.u_diffuse = data.map(parseFloat);
+                break;
+            case 'Ks':
+                this.materialObject.u_specular = data.map(parseFloat);
+                break;
+            case 'Ke':
+                this.materialObject.u_emissive = data.map(parseFloat);
+                break;
+            case 'Ni':
+                this.materialObject.u_opticalDensity = parseFloat(data[0]);
+                break;
+            case 'd':
+                this.materialObject.u_opacity = parseFloat(data[0]);
+                break;
+            case 'illum':
+                this.materialObject.u_illum = parseInt(data[0]);
+                break;
+            case 'map_Kd':
+
+            case 'map_Ns':
+
+            case 'mapBump':
+
+            default:
+                break;
         }
     }
 

@@ -3,14 +3,20 @@
  * @type {string}
  */
 export const fragmentShader = `
-    precision mediump float;
+    precision highp float;
 
     varying vec3 v_normal;
     varying vec3 v_surfaceToLight;
     varying vec3 v_surfaceToView;
     varying vec4 v_color;
 
+    uniform vec3 u_diffuse;
+    uniform vec3 u_ambient;
+    uniform vec3 u_emissive;
+    uniform vec3 u_specular;
     uniform float u_shininess;
+    uniform float u_opacity;
+    uniform vec3 u_ambientLight;
     uniform vec3 u_lightColor;
 
     void main() 
@@ -21,13 +27,15 @@ export const fragmentShader = `
         vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
         float light = dot(normal, surfaceToLightDirection);
-        float specular = 0.0;
-        if (light > 0.0) {
-            specular = pow(dot(normal, halfVector), u_shininess);
-        }
-        gl_FragColor = v_color;
-        gl_FragColor.rgb *= light * u_lightColor;
-        gl_FragColor.rgb += specular * u_lightColor;
+        float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
+        
+        vec3 effectiveDiffuse = u_diffuse * v_color.rgb;
+        float effectiveOpacity = u_opacity * v_color.a;
+
+        gl_FragColor = vec4(
+            u_emissive + u_ambient * u_ambientLight + effectiveDiffuse * light + u_specular * pow(specularLight, u_shininess),
+            effectiveOpacity
+        );
     }
 `;
 

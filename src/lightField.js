@@ -20,8 +20,8 @@ export default class LightField
         this.lightFieldPosZ = positionZ;
         this.horizontalCamerasCount = 8;
         this.verticalCamerasCount = 8;
-        this.horizontalCameraSpace = 1;
-        this.verticalCameraSpace = 1;
+        this.horizontalCameraSpace = 1.5;
+        this.verticalCameraSpace = 1.5;
         this.cameraArray = [];
     }
 
@@ -101,6 +101,21 @@ export default class LightField
 
 
     /**
+     * Asynchronous version of iterateCameras
+     * @param callback
+     * @returns {Promise<void>}
+     */
+    async iterateCamerasAsync(callback)
+    {
+        for (let row = 0; row < this.verticalCamerasCount; row++) {
+            for (let column = 0; column < this.horizontalCamerasCount; column++) {
+                await callback(this.getCamera(row, column), row, column);
+            }
+        }
+    }
+
+
+    /**
      * @param {number} row
      * @param {number} column
      * @returns {LightFieldCamera}
@@ -143,7 +158,7 @@ export default class LightField
 
 
     /**
-     * Returns a pair in following shape: [row, column]
+     * Returns a pair representing index of selected camera in following order: [row, column]
      * @returns {[number]}
      */
     get selectedCameraIndex()

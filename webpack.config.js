@@ -16,7 +16,7 @@ module.exports = {
                 ],
             },
             {
-                test: /\.obj$/i,
+                test: /\.(obj|mtl)$/i,
                 use: 'raw-loader',
             }
         ]

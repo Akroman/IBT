@@ -1,4 +1,4 @@
-import {glMatrix} from "gl-matrix";
+import {glMatrix, vec3} from "gl-matrix";
 import * as twgl from "twgl.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -12,6 +12,7 @@ import LightField from "./lightField";
 import LightFieldCamera from "./lightFieldCamera";
 import cubeObj from '../examples/cube.obj';
 import chairObj from '../examples/chair.obj';
+import chairMtl from '../examples/chair.mtl';
 
 
 /**
@@ -24,7 +25,21 @@ export default class Renderer
      */
     constructor()
     {
-        this.canvas = document.querySelector("canvas");
+        this.canvas = document.getElementById("mainCanvas");
+        this.createGl();
+        this.objParser = new ObjParser();
+        this.camera = new Camera(0, 0, 30);
+        this.light = new LightSource(0, 0, 30);
+        this.lightField = new LightField(-3, 3, 15);
+        this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
+    }
+
+
+    /**
+     * Gets WebGL rendering context from current canvas, creates programs from shaders
+     */
+    createGl()
+    {
         this.gl = this.canvas.getContext("webgl");
         if (!this.gl) {
             throw Error("WebGL not supported");
@@ -41,12 +56,6 @@ export default class Renderer
          * @type {ProgramInfo}
          */
         this.secondaryProgramInfo = twgl.createProgramInfo(this.gl, [simpleVertexShader, simpleFragmentShader]);
-
-        this.objParser = new ObjParser();
-        this.camera = new Camera(0, 0, 30);
-        this.light = new LightSource(0, 0, 30);
-        this.lightField = new LightField(-3, 3, 15);
-        this.mesh = this.objParser.parseObj(cubeObj);
     }
 
 
@@ -58,20 +67,7 @@ export default class Renderer
     initInputs()
     {
         document.getElementById("objUpload")
-            .addEventListener("change", (event) => {
-                const file = event.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.objParser.init();
-                    this.mesh = this.objParser.parseObj(e.target.result);
-                    for (const [sliderName, sliderObject] of Object.entries(this.inputs.sliders.mesh)) {
-                        sliderObject.slider.value = this.mesh[sliderName];
-                        sliderObject.sliderValue.innerHTML = this.mesh[sliderName];
-                    }
-                    this.render();
-                };
-                reader.readAsText(file);
-            });
+            .addEventListener("change", (event) => this.handleFileUpload(event.target.files));
         document.getElementById("exportLf").onclick = () => this.exportLightField();
 
         this.inputs = {
@@ -141,7 +137,9 @@ export default class Renderer
                     horizontalCamerasCount: document.getElementById("lfHorCamNumber"),
                     verticalCamerasCount: document.getElementById("lfVertCamNumber"),
                     horizontalCameraSpace: document.getElementById("lfHorCamSpace"),
-                    verticalCameraSpace: document.getElementById("lfVertCamSpace")
+                    verticalCameraSpace: document.getElementById("lfVertCamSpace"),
+                    resolutionWidth: document.getElementById("lfResolutionWidth"),
+                    resolutionHeight: document.getElementById("lfResolutionHeight")
                 }
             },
 
@@ -179,12 +177,12 @@ export default class Renderer
                             break;
                         case "checkboxes":
                             if (inputName === "cameraLookAt") {
-                                this.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
+                                this.toggleSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
                                 input.oninput = function () {
                                     if (this.checked) {
-                                        renderer.disableSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
+                                        renderer.toggleSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
                                     } else {
-                                        renderer.disableSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
+                                        renderer.toggleSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
                                     }
                                     renderer.render();
                                 };
@@ -217,19 +215,21 @@ export default class Renderer
                 renderer.render();
             };
         } else if (sceneObjectName === "lightField") {
-            input.value = this.lightField[numberName];
-            this.lightField.initCameras();
-            input.oninput = function () {
-                if (numberName.endsWith("Space")) {
-                    renderer.lightField[numberName] = parseFloat(this.value);
-                }
-                renderer.lightField.initCameras(
-                    parseInt(renderer.inputs.numbers.lightField.horizontalCamerasCount.value),
-                    parseInt(renderer.inputs.numbers.lightField.verticalCamerasCount.value)
-                );
-                renderer.updateLightFieldCameraSelection();
-                renderer.render();
-            };
+            if (!numberName.startsWith("resolution")) {
+                input.value = this.lightField[numberName];
+                this.lightField.initCameras();
+                input.oninput = function () {
+                    if (numberName.endsWith("Space")) {
+                        renderer.lightField[numberName] = parseFloat(this.value);
+                    }
+                    renderer.lightField.initCameras(
+                        parseInt(renderer.inputs.numbers.lightField.horizontalCamerasCount.value),
+                        parseInt(renderer.inputs.numbers.lightField.verticalCamerasCount.value)
+                    );
+                    renderer.updateLightFieldCameraSelection();
+                    renderer.render();
+                };
+            }
         }
     }
 
@@ -244,15 +244,15 @@ export default class Renderer
     {
         const renderer = this;
         if (selectName === "lightPositionOptions") {
-            this.disableSliders(sceneObjectName, true);
+            this.toggleSliders(sceneObjectName, true);
             input.onchange = function () {
                 switch (this.value) {
                     case "stickCamera":
                     case "stickLightField":
-                        renderer.disableSliders(sceneObjectName, true);
+                        renderer.toggleSliders(sceneObjectName, true);
                         break;
                     case "free":
-                        renderer.disableSliders(sceneObjectName, false);
+                        renderer.toggleSliders(sceneObjectName, false);
                         break;
                 }
                 renderer.render();
@@ -281,7 +281,7 @@ export default class Renderer
     {
         const renderer = this;
         input.slider.value = this[sceneObjectName][sliderName];
-        input.sliderValue.innerHTML = this[sceneObjectName][sliderName];
+        input.sliderValue.innerHTML = this[sceneObjectName][sliderName].toFixed(1);
         input.slider.oninput = function () {
             const value = parseFloat(this.value);
             input.sliderValue.innerHTML = value;
@@ -320,10 +320,10 @@ export default class Renderer
     /**
      * Disables or enables given sliders
      * @param {string} sceneObjectName
-     * @param {boolean} disable
+     * @param {boolean} toggle
      * @param {[string]} sliders
      */
-    disableSliders(sceneObjectName, disable, sliders = [])
+    toggleSliders(sceneObjectName, toggle, sliders = [])
     {
         for (const [sliderName, input] of Object.entries(this.inputs.sliders[sceneObjectName])) {
             /**
@@ -332,26 +332,47 @@ export default class Renderer
              */
             if (sliders.length) {
                 if (sliders.includes(sliderName)) {
-                    input.slider.disabled = disable;
+                    input.slider.disabled = toggle;
                 }
             } else {
-                input.slider.disabled = disable;
+                input.slider.disabled = toggle;
             }
         }
     }
 
 
     /**
-     * Inits necessary variables and stuff around WebGL (resizing, culling, etc.), sets background color
+     * Disables or enables all inputs
+     * @param {boolean} toggle
      */
-    prepareGl()
+    toggleInputs(toggle)
+    {
+        const inputs = document.getElementsByTagName("input");
+        for (let i = 0; i < inputs.length; i++) {
+            inputs[i].disabled = toggle;
+        }
+
+        const selects = document.getElementsByTagName("select");
+        for (let i = 0; i < selects.length; i++) {
+            selects[i].disabled = toggle;
+        }
+    }
+
+
+    /**
+     * Inits necessary variables and stuff around WebGL (resizing, culling, etc.), sets background color
+     * @param {boolean} enableScissor
+     */
+    prepareGl(enableScissor = true)
     {
         this.gl.useProgram(this.mainProgramInfo.program);
         this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.CULL_FACE);
-        this.gl.enable(this.gl.SCISSOR_TEST);
+        if (enableScissor) {
+            this.gl.enable(this.gl.SCISSOR_TEST);
+        }
     }
 
 
@@ -417,12 +438,14 @@ export default class Renderer
             .move();
         /** We need to make camera look in its direction and draw the light field representation */
         if (!(camera instanceof LightFieldCamera)) {
+            let meshDirection = vec3.create();
+            vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
             const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
-                ? this.mesh.position
+                ? meshDirection
                 : camera.direction;
             camera.lookAt(cameraTarget);
 
-            const lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
+            const lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.25);
             /**
              * Iterate over cameras and draw them with the simple shaders
              * @param {LightFieldCamera} lfCamera
@@ -446,15 +469,15 @@ export default class Renderer
             u_worldInverseTranspose: this.mesh.inverseTransposeMatrix,
             u_viewWorldPosition: camera.position,
             u_lightWorldPosition: lightPosition,
-            u_lightColor: this.light.color,
-            u_shininess: 150
+            u_lightColor: this.light.color
         };
         twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
 
         /** Sets uniforms, attributes and calls method for drawing */
-        for (const bufferInfo of this.mesh.getBufferInfo(this.gl)) {
+        for (const {bufferInfo, material} of this.mesh.getBufferInfo(this.gl)) {
             twgl.setUniforms(this.mainProgramInfo, {
-                u_world: this.mesh.meshMatrix
+                u_world: this.mesh.meshMatrix,
+                ...material
             });
             twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
             twgl.drawBufferInfo(this.gl, bufferInfo);
@@ -465,23 +488,114 @@ export default class Renderer
     /**
      * Iterates over all light field cameras, generates canvas screenshots, zips them and saves them on client side
      */
-    exportLightField()
+    async exportLightField()
     {
         const zipper = new JSZip();
         let fileNumber = 1;
-        this.lightField.iterateCameras((camera) => {
-            this.prepareGl();
+        /** Create a new canvas that the light field will be rendered to, disable all inputs */
+        this.canvas = Utils.createCanvas(
+            parseInt(this.inputs.numbers.lightField.resolutionWidth.value),
+            parseInt(this.inputs.numbers.lightField.resolutionHeight.value)
+        );
+        document.getElementById("lfCanvasWrapper").appendChild(this.canvas);
+        this.createGl();
+        this.toggleInputs(true);
+
+        /** Light field cameras need to be iterated asynchronously because JSZip zips files asynchronously */
+        await this.lightField.iterateCamerasAsync((camera) => {
+            this.prepareGl(false);
             twgl.resizeCanvasToDisplaySize(this.gl.canvas);
             this.gl.viewport(0, 0, this.canvas.width, this.gl.canvas.height);
 
             this.mesh.move();
             this.renderCameraView(camera, this.canvas.clientHeight);
 
-            this.canvas.toBlob(blob => zipper.file("IMG_" + fileNumber, blob, {base64: true}));
-            fileNumber++;
+            /** Return a promise which saves the screenshot */
+            return new Promise((resolve) => {
+                this.canvas.toBlob((blob) => {
+                    zipper.file("IMG_" + fileNumber + ".png", blob, {base64: true});
+                    fileNumber++;
+                    resolve();
+                });
+            });
         });
+
+        /** Save the zipped screenshots, enable inputs, remove the light field canvas and re-render scene */
         zipper.generateAsync({type: "blob"})
-            .then(content => saveAs(content, "light_field.zip"));
-        this.render();
+            .then((content) => {
+                saveAs(content, "light_field.zip");
+                this.toggleInputs(false);
+                this.canvas.remove();
+                this.canvas = document.getElementById("mainCanvas");
+                this.createGl();
+                this.render();
+            });
+    }
+
+
+    /**
+     * Iterates over all uploaded files and handles them according to their extension
+     * @param {Object} files
+     */
+    handleFileUpload(files)
+    {
+        const readers = [];
+        let objFiles = 0;
+        let mtlFiles = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const fileName = files[i].name.split('.');
+            const fileType = fileName[fileName.length - 1].toLowerCase();
+            switch (fileType) {
+                /**
+                 * OBJ and MTL extensions parsing
+                 * For each of these files create new Promise, which reads the file and resolves the promise on success
+                 * Reject the promise if there's more than one file of either type or if the reading fails
+                 */
+                case "obj":
+                    objFiles++;
+                case "mtl":
+                    if (fileType === "mtl") {
+                        mtlFiles++;
+                    }
+                    readers.push(new Promise((resolve, reject) => {
+                        if (mtlFiles >= 2 || objFiles >= 2) {
+                            reject("Nahrajte prosím pouze 1 OBJ soubor a 1 MTL soubor společně se soubory textur.");
+                        }
+                        const fileReader = new FileReader();
+
+                        fileReader.onload = (ev) => resolve(ev.target.result);
+                        fileReader.onerror = (ev) => reject(ev.target.result);
+                        fileReader.readAsText(files[i]);
+                    }));
+                    break;
+
+                /**
+                 * All valid texture extensions
+                 * Just save textures for further use when rendering
+                 */
+                case "jpg":
+                case "png":
+                case "gif":
+                case "bmp":
+                case "tiff":
+                case "psd":
+                case "tga":
+                case "iff":
+                case "pict":
+
+            }
+        }
+
+        /** When all input files are read, pass them to ObjParser and re-render scene, alert on reject */
+        Promise.all(readers).then((values) => {
+            this.objParser.init();
+            this.mesh = this.objParser.parseObj(values.join("\n"));
+            for (const [sliderName, sliderObject] of Object.entries(this.inputs.sliders.mesh)) {
+                sliderObject.slider.value = this.mesh[sliderName];
+                sliderObject.sliderValue.innerHTML = this.mesh[sliderName];
+            }
+            this.render();
+        }, (reason) => alert(reason));
     }
 }

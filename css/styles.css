@@ -1,4 +1,4 @@
-canvas {
+#mainCanvas {
     border: 3px solid #000;
     border-radius: 15px;
     width: 100%;
@@ -55,6 +55,14 @@ canvas {
     background: cornflowerblue; /* Green background */
     border-radius: 50%;
     cursor: pointer; /* Cursor on hover */
+}
+
+.slider:disabled::-webkit-slider-thumb {
+    background: dimgrey;
+}
+
+.slider:disabled::-moz-range-thumb:disabled {
+    background: dimgrey;
 }
 
 .slider::-moz-range-thumb {
