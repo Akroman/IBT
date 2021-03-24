@@ -27,7 +27,7 @@ export default class Renderer
     {
         this.canvas = document.getElementById("mainCanvas");
         this.createGl();
-        this.objParser = new ObjParser();
+        this.objParser = new ObjParser(this.gl);
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
         this.lightField = new LightField(-3, 3, 15);
@@ -445,7 +445,7 @@ export default class Renderer
                 : camera.direction;
             camera.lookAt(cameraTarget);
 
-            const lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.25);
+            const lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
             /**
              * Iterate over cameras and draw them with the simple shaders
              * @param {LightFieldCamera} lfCamera
@@ -539,12 +539,13 @@ export default class Renderer
      */
     handleFileUpload(files)
     {
-        const readers = [];
+        const filePromises = [];
         let objFiles = 0;
         let mtlFiles = 0;
 
         for (let i = 0; i < files.length; i++) {
-            const fileName = files[i].name.split('.');
+            const file = files[i];
+            const fileName = file.name.split('.');
             const fileType = fileName[fileName.length - 1].toLowerCase();
             switch (fileType) {
                 /**
@@ -558,15 +559,15 @@ export default class Renderer
                     if (fileType === "mtl") {
                         mtlFiles++;
                     }
-                    readers.push(new Promise((resolve, reject) => {
+                    filePromises.push(new Promise((resolve, reject) => {
                         if (mtlFiles >= 2 || objFiles >= 2) {
                             reject("Nahrajte prosím pouze 1 OBJ soubor a 1 MTL soubor společně se soubory textur.");
                         }
-                        const fileReader = new FileReader();
 
+                        const fileReader = new FileReader();
                         fileReader.onload = (ev) => resolve(ev.target.result);
                         fileReader.onerror = (ev) => reject(ev.target.result);
-                        fileReader.readAsText(files[i]);
+                        fileReader.readAsText(file);
                     }));
                     break;
 
@@ -578,22 +579,63 @@ export default class Renderer
                 case "png":
                 case "gif":
                 case "bmp":
-                case "tiff":
                 case "psd":
                 case "tga":
                 case "iff":
+                case "tiff":
                 case "pict":
+                    filePromises.push(new Promise((resolve, reject) => {
+                        const image = new Image();
+                        const texture = Utils.create1PixelTexture(this.gl, [128, 192, 255, 255]);
+                        const textureObject = {};
+                        textureObject[file.name] = texture;
 
+                        image.onload = () => {
+                            this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+                            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+                            this.gl.texImage2D(
+                                this.gl.TEXTURE_2D,
+                                0,
+                                this.gl.RGBA,
+                                this.gl.RGBA,
+                                this.gl.UNSIGNED_BYTE,
+                                image
+                            );
+
+                            /** Check if the image is a power of 2 in both dimensions */
+                            if (Utils.isPowerOf2(image.width) && Utils.isPowerOf2(image.height)) {
+                                /** It's a power of 2, generate mips */
+                                this.gl.generateMipmap(this.gl.TEXTURE_2D);
+                            } else {
+                                /** It's not a power of 2, turn of mips and set wrapping to clamp to edge */
+                                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+                                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+                                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+                            }
+                            resolve(textureObject);
+                        };
+
+                        const fileReader = new FileReader();
+                        fileReader.onload = (ev) => image.src = ev.target.result;
+                        fileReader.onerror = (ev) => reject(ev.target.result);
+                        fileReader.readAsDataURL(file);
+                    }));
+                    break;
+                default:
+                    break;
             }
         }
 
         /** When all input files are read, pass them to ObjParser and re-render scene, alert on reject */
-        Promise.all(readers).then((values) => {
+        Promise.all(filePromises).then((values) => {
+            const objMtlText = values.filter((file) => typeof file === 'string').join("\n");
+            const textures = values.filter((file) => typeof file === 'object');
+
             this.objParser.init();
-            this.mesh = this.objParser.parseObj(values.join("\n"));
+            this.mesh = this.objParser.parseObj(objMtlText, textures);
             for (const [sliderName, sliderObject] of Object.entries(this.inputs.sliders.mesh)) {
                 sliderObject.slider.value = this.mesh[sliderName];
-                sliderObject.sliderValue.innerHTML = this.mesh[sliderName];
+                sliderObject.sliderValue.innerHTML = this.mesh[sliderName].toFixed(1);
             }
             this.render();
         }, (reason) => alert(reason));

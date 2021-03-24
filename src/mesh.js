@@ -1,5 +1,5 @@
 import * as twgl from "twgl.js";
-import {mat4, vec3} from "gl-matrix";
+import {mat4, vec2, vec3} from "gl-matrix";
 
 
 /**
@@ -143,10 +143,110 @@ export default class Mesh
                 data.color = {value: [1, 1, 1, 1]};
             }
 
+            if (data.texcoord && data.normal) {
+                data.tangent = this.generateTangents(data.position, data.texcoord);
+            } else {
+                data.tangent = { value: [1, 0, 0] };
+            }
+
+            if (!data.texcoord) {
+                data.texcoord = { value: [0, 0] };
+            }
+
+            if (!data.normal) {
+                data.normal = { value: [0, 0, 1] };
+            }
+
             return {
                 material: this.materials[material],
                 bufferInfo: twgl.createBufferInfoFromArrays(gl, data)
             };
         });
+    }
+
+
+    /**
+     * @param {[number]} indices
+     * @returns {function(): *}
+     */
+    makeIndexIterator(indices)
+    {
+        let ndx = 0;
+        const fn = () => indices[ndx++];
+        fn.reset = () => { ndx = 0; };
+        fn.numElements = indices.length;
+        return fn;
+    }
+
+
+    /**
+     * @param {[number]} positions
+     * @returns {function(): *}
+     */
+    makeUnindexedIterator(positions)
+    {
+        let ndx = 0;
+        const fn = () => ndx++;
+        fn.reset = () => { ndx = 0; };
+        fn.numElements = positions.length / 3;
+        return fn;
+    }
+
+
+    /**
+     *
+     * @param {[number]} position
+     * @param {[number]} texcoord
+     * @param {[number]} indices
+     * @returns {[number]}
+     */
+    generateTangents(position, texcoord, indices = null)
+    {
+        const getNextIndex = indices ? this.makeIndexIterator(indices) : this.makeUnindexedIterator(position);
+        const numFaceVerts = getNextIndex.numElements;
+        const numFaces = numFaceVerts / 3;
+
+        const tangents = [];
+        for (let i = 0; i < numFaces; i++) {
+            const n1 = getNextIndex();
+            const n2 = getNextIndex();
+            const n3 = getNextIndex();
+
+            const p1 = vec3.fromValues(...position.slice(n1 * 3, n1 * 3 + 3));
+            const p2 = vec3.fromValues(...position.slice(n2 * 3, n2 * 3 + 3));
+            const p3 = vec3.fromValues(...position.slice(n3 * 3, n3 * 3 + 3));
+
+            const uv1 = vec2.fromValues(...texcoord.slice(n1 * 2, n1 * 2 + 2));
+            const uv2 = vec2.fromValues(...texcoord.slice(n2 * 2, n2 * 2 + 2));
+            const uv3 = vec2.fromValues(...texcoord.slice(n3 * 2, n3 * 2 + 2));
+
+            let dp12 = vec3.create(),
+                dp13 = vec3.create(),
+                duv12 = vec2.create(),
+                duv13 = vec2.create();
+
+            vec3.subtract(dp12, p2, p1);
+            vec3.subtract(dp13, p3, p1);
+
+            vec2.subtract(duv12, uv2, uv1);
+            vec2.subtract(duv13, uv3, uv1);
+
+            const f = 1.0 / (duv12[0] * duv13[1] - duv13[0] * duv12[1]);
+            let dp12Scale = vec3.create(),
+                dp13Scale = vec3.create();
+            vec3.scale(dp12Scale, dp12Scale, duv13[1]);
+            vec3.scale(dp13Scale, dp13Scale, duv12[1]);
+            vec3.subtract(dp12Scale, dp12Scale, dp13Scale);
+            vec3.scale(dp12Scale, dp12Scale, f);
+            vec3.normalize(dp12Scale, dp12Scale);
+
+            const tangent = Number.isFinite(f)
+                ? dp12Scale
+                : [1, 0, 0];
+
+            tangents.push(...tangent, ...tangent, ...tangent);
+        }
+
+        return tangents;
     }
 }

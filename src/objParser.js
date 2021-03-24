@@ -1,4 +1,5 @@
 import Mesh from "./mesh";
+import Utils from "./utils";
 
 
 /**
@@ -8,9 +9,11 @@ export default class ObjParser
 {
     /**
      * Constructor initializes all arrays and variables that hold parsed values from .obj file
+     * @param {WebGLRenderingContext} gl
      */
-    constructor()
+    constructor(gl)
     {
+        this.gl = gl;
         this.init();
     }
 
@@ -47,7 +50,10 @@ export default class ObjParser
                 u_ambient: [0, 0, 0],
                 u_specular: [1, 1, 1],
                 u_shininess: 400,
-                u_opacity: 1
+                u_opacity: 1,
+                u_diffuseMap: Utils.create1PixelTexture(this.gl, [255, 255, 255, 255]),
+                u_specularMap: Utils.create1PixelTexture(this.gl, [255, 255, 255, 255]),
+                u_normalMap: Utils.create1PixelTexture(this.gl, [127, 127, 255, 0])
             }
         };
         this.object = 'default';
@@ -57,9 +63,10 @@ export default class ObjParser
     /**
      * Main function of this class, returns object with data ready to be passed for WebGL
      * @param {string} objText
+     * @param {[Object]} textures
      * @returns {Mesh}
      */
-    parseObj(objText)
+    parseObj(objText, textures = [])
     {
         const keywordRegex = /(\w*)(?: )*(.*)/;
         /** Split text by new lines and iterate over the array */
@@ -83,6 +90,25 @@ export default class ObjParser
         /** Cycle through geometry data and remove any empty elements (eg. remove empty texcoords, etc.) */
         for (const geometry of this.geometries) {
             geometry.data = Object.fromEntries(Object.entries(geometry.data).filter(([, array]) => array.length > 0));
+        }
+
+        const textureNames = textures.map((textureObject) => Object.keys(textureObject)[0]);
+        for (const material of Object.values(this.materials)) {
+            /** First iterate over all maps and find appropriate texture in textures */
+            Object.entries(material)
+                .filter(([key]) => key.endsWith("Map"))
+                .filter(([key, fileName]) => textureNames.includes(fileName))
+                .forEach(([key, fileName]) => {
+                    material[key] = textures.filter((textureObject) => textureObject[fileName])[0][fileName];
+                });
+
+            /** Then iterate over the maps again and fill in default texture for those that don't have any texture assigned */
+            Object.entries(material)
+                .filter(([key]) => key.endsWith("Map"))
+                .filter(([key, fileName]) => !textureNames.includes(fileName) && !(fileName instanceof WebGLTexture))
+                .forEach(([key]) => {
+                    material[key] = this.materials.default[key];
+                });
         }
 
         return new Mesh(this.geometries, this.materialLibs, this.materials);
@@ -136,7 +162,7 @@ export default class ObjParser
 
             /** Keywords from .mtl files */
             case 'newmtl':
-                this.materialObject = {};
+                this.materialObject = JSON.parse(JSON.stringify(this.materials.default));
                 this.materials[unparsedArguments] = this.materialObject;
                 break;
             case 'Ns':
@@ -164,11 +190,14 @@ export default class ObjParser
                 this.materialObject.u_illum = parseInt(data[0]);
                 break;
             case 'map_Kd':
-
+                this.materialObject.u_diffuseMap = unparsedArguments;
+                break;
             case 'map_Ns':
-
+                this.materialObject.u_specularMap = unparsedArguments;
+                break;
             case 'mapBump':
-
+                this.materialObject.u_normalMap = unparsedArguments;
+                break;
             default:
                 break;
         }

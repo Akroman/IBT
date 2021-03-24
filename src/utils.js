@@ -26,4 +26,39 @@ export default class Utils
         canvas.height = height;
         return canvas;
     }
+
+
+    /**
+     * @param {number} value
+     * @returns {boolean}
+     */
+    static isPowerOf2(value)
+    {
+        return (value & (value - 1)) === 0;
+    }
+
+
+    /**
+     * Creates texture from supplied pixel
+     * @param {WebGLRenderingContext} gl
+     * @param {[number]} pixel
+     * @returns {WebGLTexture}
+     */
+    static create1PixelTexture(gl, pixel)
+    {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            1,
+            1,
+            0,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            new Uint8Array(pixel)
+        );
+        return texture;
+    }
 }
