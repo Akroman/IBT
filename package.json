@@ -19,7 +19,7 @@
         "webpack-cli": "^4.5.0"
     },
     "scripts": {
-        "start": "node ./src/index.js",
+        "start": "node ./dist/main.js",
         "build": "webpack"
     }
 }
