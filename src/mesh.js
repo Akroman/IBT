@@ -42,7 +42,7 @@ export default class Mesh
      */
     get inverseTransposeMatrix()
     {
-        let worldInverseTransposeMatrix = mat4.create();
+        const worldInverseTransposeMatrix = mat4.create();
         mat4.invert(worldInverseTransposeMatrix, this.meshMatrix);
         mat4.transpose(worldInverseTransposeMatrix, worldInverseTransposeMatrix);
         return worldInverseTransposeMatrix;
@@ -56,7 +56,7 @@ export default class Mesh
     get centerOffset()
     {
         const extents = this.geometriesExtents;
-        let range = vec3.create(),
+        const range = vec3.create(),
             objOffset = vec3.create();
 
         vec3.subtract(range, extents.max, extents.min);
@@ -143,22 +143,14 @@ export default class Mesh
                 data.color = {value: [1, 1, 1, 1]};
             }
 
-            if (data.texcoord && data.normal) {
-                data.tangent = this.generateTangents(data.position, data.texcoord);
-            } else {
-                data.tangent = { value: [1, 0, 0] };
-            }
-
-            if (!data.texcoord) {
-                data.texcoord = { value: [0, 0] };
-            }
-
-            if (!data.normal) {
-                data.normal = { value: [0, 0, 1] };
-            }
+            data.tangent = data.texcoord && data.normal
+                ? this.generateTangents(data.position, data.texcoord)
+                : { value: [1, 0, 0] };
+            data.texcoord ??= { value: [0, 0] };
+            data.normal ??= { value: [0, 0, 1] };
 
             return {
-                material: this.materials[material],
+                material: this.materials[material] ?? this.materials.default,
                 bufferInfo: twgl.createBufferInfoFromArrays(gl, data)
             };
         });
@@ -166,24 +158,10 @@ export default class Mesh
 
 
     /**
-     * @param {[number]} indices
-     * @returns {function(): *}
-     */
-    makeIndexIterator(indices)
-    {
-        let ndx = 0;
-        const fn = () => indices[ndx++];
-        fn.reset = () => { ndx = 0; };
-        fn.numElements = indices.length;
-        return fn;
-    }
-
-
-    /**
      * @param {[number]} positions
      * @returns {function(): *}
      */
-    makeUnindexedIterator(positions)
+    createUnindexedIterator(positions)
     {
         let ndx = 0;
         const fn = () => ndx++;
@@ -197,12 +175,11 @@ export default class Mesh
      *
      * @param {[number]} position
      * @param {[number]} texcoord
-     * @param {[number]} indices
      * @returns {[number]}
      */
-    generateTangents(position, texcoord, indices = null)
+    generateTangents(position, texcoord)
     {
-        const getNextIndex = indices ? this.makeIndexIterator(indices) : this.makeUnindexedIterator(position);
+        const getNextIndex = this.createUnindexedIterator(position);
         const numFaceVerts = getNextIndex.numElements;
         const numFaces = numFaceVerts / 3;
 
@@ -220,7 +197,7 @@ export default class Mesh
             const uv2 = vec2.fromValues(...texcoord.slice(n2 * 2, n2 * 2 + 2));
             const uv3 = vec2.fromValues(...texcoord.slice(n3 * 2, n3 * 2 + 2));
 
-            let dp12 = vec3.create(),
+            const dp12 = vec3.create(),
                 dp13 = vec3.create(),
                 duv12 = vec2.create(),
                 duv13 = vec2.create();
@@ -232,10 +209,10 @@ export default class Mesh
             vec2.subtract(duv13, uv3, uv1);
 
             const f = 1.0 / (duv12[0] * duv13[1] - duv13[0] * duv12[1]);
-            let dp12Scale = vec3.create(),
+            const dp12Scale = vec3.create(),
                 dp13Scale = vec3.create();
-            vec3.scale(dp12Scale, dp12Scale, duv13[1]);
-            vec3.scale(dp13Scale, dp13Scale, duv12[1]);
+            vec3.scale(dp12Scale, dp12, duv13[1]);
+            vec3.scale(dp13Scale, dp13, duv12[1]);
             vec3.subtract(dp12Scale, dp12Scale, dp13Scale);
             vec3.scale(dp12Scale, dp12Scale, f);
             vec3.normalize(dp12Scale, dp12Scale);

@@ -40,6 +40,7 @@ export default class ObjParser
             []    // colors
         ];
 
+        this.newGeometry();
         this.geometries = [];
         this.materialLibs = [];
         this.material = 'default';
@@ -83,7 +84,7 @@ export default class ObjParser
                 continue;
             }
             const [, keyword, unparsedArguments] = match;
-            const parts = line.split(/\s+/).slice(1);
+            const parts = line.split(/\s+/).slice(1).filter((value ) => value !== "");
             this.addObjData(keyword, parts, unparsedArguments);
         }
 
@@ -158,6 +159,7 @@ export default class ObjParser
                 break;
             case 'o':
                 this.object = unparsedArguments;
+                this.newGeometry();
                 break;
 
             /** Keywords from .mtl files */
@@ -209,20 +211,16 @@ export default class ObjParser
      */
     addVertex(vertex)
     {
-        const parts = vertex.split('/');
-        parts.forEach((objIndex, i) => {
-            if (!objIndex) {
-                return;
-            }
-
-            objIndex = parseInt(objIndex);
-            const index = objIndex + (objIndex >= 0 ? 0 : this.objVertexData[i].length);
-            this.webglVertexData[i].push(...this.objVertexData[i][index]);
-
-            if (i === 0 && this.objColors.length > 1) {
-                this.geometry.data.color.push(...this.objColors[index]);
-            }
-        });
+        vertex.split('/')
+            .filter((value) => value !== "")
+            .forEach((objIndex, i) => {
+                objIndex = parseInt(objIndex);
+                const index = objIndex + (objIndex >= 0 ? 0 : this.objVertexData[i].length);
+                this.webglVertexData[i].push(...this.objVertexData[i][index]);
+                if (i === 0 && this.objColors.length > 1) {
+                    this.geometry.data.color.push(...this.objColors[index]);
+                }
+            });
     }
 
 

@@ -39,7 +39,7 @@ export default class LightSource
      */
     get color()
     {
-        let color = vec3.fromValues(this.lightColorRed, this.lightColorGreen, this.lightColorBlue);
+        const color = vec3.fromValues(this.lightColorRed, this.lightColorGreen, this.lightColorBlue);
         vec3.normalize(color, color);
         return color;
     }

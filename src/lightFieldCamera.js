@@ -74,7 +74,7 @@ export default class LightFieldCamera extends Camera
      */
     get positionMatrix()
     {
-        let matrix = mat4.create();
+        const matrix = mat4.create();
         mat4.translate(matrix, matrix, this.position);
         return matrix;
     }

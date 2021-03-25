@@ -10,7 +10,6 @@ import LightSource from "./lightSource";
 import Utils from "./utils";
 import LightField from "./lightField";
 import LightFieldCamera from "./lightFieldCamera";
-import cubeObj from '../examples/cube.obj';
 import chairObj from '../examples/chair.obj';
 import chairMtl from '../examples/chair.mtl';
 
@@ -32,6 +31,8 @@ export default class Renderer
         this.light = new LightSource(0, 0, 30);
         this.lightField = new LightField(-3, 3, 15);
         this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
+        this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
+        this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
     }
 
 
@@ -69,6 +70,39 @@ export default class Renderer
         document.getElementById("objUpload")
             .addEventListener("change", (event) => this.handleFileUpload(event.target.files));
         document.getElementById("exportLf").onclick = () => this.exportLightField();
+
+        this.canvas.addEventListener("mousedown", (event) => {
+            if (!this.inputs.checkboxes.camera.cameraLookAt.checked) {
+                this.canvas.onmousemove = (ev) => {
+                    const sensitivity = 0.3;
+                    const previousScreenY = ev.screenY - ev.movementY;
+
+                    const xOffset = ev.movementX * sensitivity;
+                    const yOffset = (previousScreenY - ev.screenY) * sensitivity;
+
+                    this.camera.cameraYaw += xOffset;
+                    this.camera.cameraPitch += yOffset;
+
+                    if (this.camera.cameraPitch > 89) {
+                        this.camera.cameraPitch = 89;
+                    } else if (this.camera.cameraPitch < -89) {
+                        this.camera.cameraPitch = -89;
+                    }
+                    this.render();
+                };
+            }
+        });
+        this.canvas.addEventListener("mouseup", (event) => {
+            this.canvas.onmousemove = null;
+        });
+        this.canvas.addEventListener("keydown", (event) => {
+            this.inputs.keys[event.keyCode] = true;
+            this.render();
+        });
+        this.canvas.addEventListener("keyup", (event) => {
+            this.inputs.keys[event.keyCode] = false;
+            this.render();
+        })
 
         this.inputs = {
             sliders: {
@@ -157,7 +191,9 @@ export default class Renderer
                 lightField: {
                     lightFieldCameraSelection: document.getElementById("lfCameraSelection")
                 }
-            }
+            },
+
+            keys: {}
         }
 
         /** Cycles through all inputs and initializes them */
@@ -372,13 +408,14 @@ export default class Renderer
         this.gl.enable(this.gl.CULL_FACE);
         if (enableScissor) {
             this.gl.enable(this.gl.SCISSOR_TEST);
+        } else {
+            this.gl.disable(this.gl.SCISSOR_TEST);
         }
     }
 
 
     /**
      * Main function of program, passes parsed data to WebGL and handles drawing scene
-     * Most of the matrix logic is located here
      */
     render()
     {
@@ -394,6 +431,7 @@ export default class Renderer
         this.gl.scissor(0, halfHeight, width, halfHeight);
 
         this.mesh.move();
+        this.handleKeyboardInputs();
         this.renderCameraView(this.camera, effectiveHeight);
 
         /** On the lower half of canvas draw view from selected light field camera */
@@ -404,6 +442,37 @@ export default class Renderer
         const lfCamera = this.lightField.selectedCamera;
         if (lfCamera) {
             this.renderCameraView(lfCamera, effectiveHeight);
+        }
+    }
+
+
+    handleKeyboardInputs()
+    {
+        const cameraSpeed = 0.5;
+        const helperVector = vec3.create();
+        const cameraFrontScaled = vec3.create();
+        const cameraFrontCrossNormScaled = vec3.create();
+
+        vec3.scale(cameraFrontScaled, this.camera.cameraFront, cameraSpeed);
+        vec3.cross(cameraFrontCrossNormScaled, this.camera.cameraFront, this.camera.cameraUp);
+        vec3.normalize(cameraFrontCrossNormScaled, cameraFrontCrossNormScaled);
+        vec3.scale(cameraFrontCrossNormScaled, cameraFrontCrossNormScaled, cameraSpeed);
+
+        if (this.inputs.keys["87"]) {
+            vec3.add(helperVector, this.camera.position, cameraFrontScaled);
+            this.camera.position = helperVector;
+        }
+        if (this.inputs.keys["83"]) {
+            vec3.subtract(helperVector, this.camera.position, cameraFrontScaled);
+            this.camera.position = helperVector;
+        }
+        if (this.inputs.keys["65"]) {
+            vec3.subtract(helperVector, this.camera.position, cameraFrontCrossNormScaled);
+            this.camera.position = helperVector;
+        }
+        if (this.inputs.keys["68"]) {
+            vec3.add(helperVector, this.camera.position, cameraFrontCrossNormScaled);
+            this.camera.position = helperVector;
         }
     }
 
@@ -438,14 +507,13 @@ export default class Renderer
             .move();
         /** We need to make camera look in its direction and draw the light field representation */
         if (!(camera instanceof LightFieldCamera)) {
-            let meshDirection = vec3.create();
+            const meshDirection = vec3.create();
             vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
             const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
                 ? meshDirection
                 : camera.direction;
             camera.lookAt(cameraTarget);
 
-            const lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
             /**
              * Iterate over cameras and draw them with the simple shaders
              * @param {LightFieldCamera} lfCamera
@@ -455,8 +523,8 @@ export default class Renderer
                     u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
                     u_color: lfCamera.selected ? [1, 0, 0, 1] : [0, 0, 0, 1]
                 });
-                twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, lfCameraBufferInfo);
-                twgl.drawBufferInfo(this.gl, lfCameraBufferInfo, this.gl.LINES);
+                twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, this.lfCameraBufferInfo);
+                twgl.drawBufferInfo(this.gl, this.lfCameraBufferInfo, this.gl.LINES);
             };
             this.gl.useProgram(this.secondaryProgramInfo.program);
             this.lightField.iterateCameras(lfCameraRenderCallback);
@@ -474,7 +542,7 @@ export default class Renderer
         twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
 
         /** Sets uniforms, attributes and calls method for drawing */
-        for (const {bufferInfo, material} of this.mesh.getBufferInfo(this.gl)) {
+        for (const {bufferInfo, material} of this.objBufferInfo) {
             twgl.setUniforms(this.mainProgramInfo, {
                 u_world: this.mesh.meshMatrix,
                 ...material
@@ -493,12 +561,11 @@ export default class Renderer
         const zipper = new JSZip();
         let fileNumber = 1;
         /** Create a new canvas that the light field will be rendered to, disable all inputs */
-        this.canvas = Utils.createCanvas(
-            parseInt(this.inputs.numbers.lightField.resolutionWidth.value),
-            parseInt(this.inputs.numbers.lightField.resolutionHeight.value)
-        );
+        const initialWidth = this.canvas.style.width;
+        const initialHeight = this.canvas.style.height;
+        this.canvas.style.width = (parseInt(this.inputs.numbers.lightField.resolutionWidth.value) + 6) + "px";
+        this.canvas.style.height = (parseInt(this.inputs.numbers.lightField.resolutionHeight.value) + 6) + "px";
         document.getElementById("lfCanvasWrapper").appendChild(this.canvas);
-        this.createGl();
         this.toggleInputs(true);
 
         /** Light field cameras need to be iterated asynchronously because JSZip zips files asynchronously */
@@ -525,9 +592,9 @@ export default class Renderer
             .then((content) => {
                 saveAs(content, "light_field.zip");
                 this.toggleInputs(false);
-                this.canvas.remove();
-                this.canvas = document.getElementById("mainCanvas");
-                this.createGl();
+                this.canvas.style.height = initialHeight;
+                this.canvas.style.width = initialWidth;
+                document.getElementById("mainCanvasWrapper").appendChild(this.canvas);
                 this.render();
             });
     }
@@ -633,6 +700,7 @@ export default class Renderer
 
             this.objParser.init();
             this.mesh = this.objParser.parseObj(objMtlText, textures);
+            this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
             for (const [sliderName, sliderObject] of Object.entries(this.inputs.sliders.mesh)) {
                 sliderObject.slider.value = this.mesh[sliderName];
                 sliderObject.sliderValue.innerHTML = this.mesh[sliderName].toFixed(1);

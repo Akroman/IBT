@@ -21,6 +21,8 @@ export default class Camera
         this.cameraPosZ = positionZ;
         this.cameraPitch = 0;
         this.cameraYaw = -90;
+        this.cameraFront = vec3.fromValues(0, 0, -1);
+        this.cameraUp = vec3.fromValues(0, 1, 0);
         this.cameraMatrix = mat4.create();
     }
 
@@ -45,7 +47,7 @@ export default class Camera
         if (this.projectionMatrix === undefined) {
             throw new InvalidCameraStateException("Error: projection matrix must be set to get viewProjectionMatrix (use setPerspective)");
         }
-        let viewProjectionMatrix = mat4.create();
+        const viewProjectionMatrix = mat4.create();
         mat4.multiply(viewProjectionMatrix, this.projectionMatrix, this.cameraMatrix);
         return viewProjectionMatrix;
     }
@@ -56,7 +58,7 @@ export default class Camera
      */
     getWorldViewProjectionMatrix(world)
     {
-        let worldViewProjectionMatrix = mat4.create();
+        const worldViewProjectionMatrix = mat4.create();
         mat4.multiply(worldViewProjectionMatrix, this.viewProjectionMatrix, world);
         return worldViewProjectionMatrix;
     }
@@ -67,14 +69,14 @@ export default class Camera
      */
     get direction()
     {
-        let front = vec3.fromValues(
+        this.cameraFront = vec3.fromValues(
             Math.cos(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch)),
             Math.sin(glMatrix.toRadian(this.cameraPitch)),
             Math.sin(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch))
         );
-        vec3.normalize(front, front);
-        let direction = vec3.create();
-        vec3.add(direction, this.position, front);
+        vec3.normalize(this.cameraFront, this.cameraFront);
+        const direction = vec3.create();
+        vec3.add(direction, this.position, this.cameraFront);
         return direction;
     }
 
@@ -100,7 +102,7 @@ export default class Camera
      * @param {vec3} up
      * @returns {Camera}
      */
-    lookAt(target, up = vec3.fromValues(0, 1.0, 0))
+    lookAt(target, up = this.cameraUp)
     {
         mat4.lookAt(this.cameraMatrix, this.position, target, up);
         return this;

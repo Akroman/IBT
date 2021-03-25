@@ -26,8 +26,8 @@ export const fragmentShader = `
 
     void main() 
     {
-        vec3 normal = normalize(v_normal) * (float(gl_FrontFacing) * 2.0 - 1.0);
-        vec3 tangent = normalize(v_tangent) * (float(gl_FrontFacing) * 2.0 - 1.0);
+        vec3 normal = normalize(v_normal);
+        vec3 tangent = normalize(v_tangent);
         vec3 bitangent = normalize(cross(normal, tangent));
         
         mat3 tbn = mat3(tangent, bitangent, normal);
@@ -39,7 +39,10 @@ export const fragmentShader = `
         vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
         float light = dot(normal, surfaceToLightDirection);
-        float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
+        float specularLight = 0.0;
+        if (light > 0.0) {
+            specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
+        }
         vec4 specularMapColor = texture2D(u_specularMap, v_texcoord);
         vec3 effectiveSpecular = u_specular * specularMapColor.rgb;
         

@@ -5,6 +5,7 @@
     <title>WebGL</title>
 </head>
 <body>
+    <div class="row" id="lfCanvasWrapper"></div>
     <div class="row" style="margin: 10px;">
         <div class="col sideBar">
             <div class="row">
@@ -82,7 +83,7 @@
                 <div class="row" style="margin-top: 20px">
                     <div class="col">
                         <label for="cameraLookAt">Zaměřit na objekt</label>
-                        <input type="checkbox" name="cameraRotation" id="cameraLookAt" checked>
+                        <input type="checkbox" name="cameraRotation" id="cameraLookAt">
                     </div>
                 </div>
 
@@ -216,7 +217,7 @@
             </div>
         </div>
 
-        <div class="col-6">
+        <div id="mainCanvasWrapper" class="col-6">
             <canvas id="mainCanvas" tabindex="0" style="outline: none"></canvas>
         </div>
 
@@ -347,7 +348,6 @@
             </div>
         </div>
     </div>
-    <div class="row" id="lfCanvasWrapper"></div>
     <script type="text/javascript" src="main.js"></script>
 </body>
 </html>

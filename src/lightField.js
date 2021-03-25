@@ -50,7 +50,7 @@ export default class LightField
         const zPosition = this.lightFieldPosZ;
         let yPosition = this.lightFieldPosY;
         let xPosition = this.lightFieldPosX;
-        let lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
+        const lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
 
         /** Iterate over given number of rows and columns and create light field cameras */
         for (let row = 0; row < verticalCamerasCount; row++) {
