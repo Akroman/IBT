@@ -29,7 +29,7 @@ export default class Renderer
         this.objParser = new ObjParser(this.gl);
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
-        this.lightField = new LightField(-3, 3, 15);
+        this.lightField = new LightField(-5, 5, 15);
         this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
         this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
         this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
@@ -102,7 +102,7 @@ export default class Renderer
         this.canvas.addEventListener("keyup", (event) => {
             this.inputs.keys[event.keyCode] = false;
             this.render();
-        })
+        });
 
         this.inputs = {
             sliders: {
@@ -401,9 +401,6 @@ export default class Renderer
      */
     prepareGl(enableScissor = true)
     {
-        this.gl.useProgram(this.mainProgramInfo.program);
-        this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.CULL_FACE);
         if (enableScissor) {
@@ -429,6 +426,7 @@ export default class Renderer
 
         this.gl.viewport(0, halfHeight, width, halfHeight);
         this.gl.scissor(0, halfHeight, width, halfHeight);
+        this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
 
         this.mesh.move();
         this.handleKeyboardInputs();
@@ -437,6 +435,7 @@ export default class Renderer
         /** On the lower half of canvas draw view from selected light field camera */
         this.gl.viewport(0, 0, width, halfHeight);
         this.gl.scissor(0, 0, width, halfHeight);
+        this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
         /** Proceed to draw only if user has selected a camera */
         const lfCamera = this.lightField.selectedCamera;
@@ -446,6 +445,9 @@ export default class Renderer
     }
 
 
+    /**
+     * Takes care of camera movement using keyboard input
+     */
     handleKeyboardInputs()
     {
         const cameraSpeed = 0.5;
@@ -484,6 +486,9 @@ export default class Renderer
      */
     renderCameraView(camera, height)
     {
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.useProgram(this.mainProgramInfo.program);
+
         let lightPosition;
         switch (this.inputs.selects.light.lightPositionOptions.value) {
             case "stickCamera":
