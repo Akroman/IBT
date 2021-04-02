@@ -19,17 +19,57 @@ import chairMtl from '../examples/chair.mtl';
  */
 export default class Renderer
 {
+    /** @type {HTMLCanvasElement} */
+    canvas;
+
+    /** @type {WebGLRenderingContext} */
+    gl;
+
+    /** @type {ObjParser} */
+    objParser;
+
+    /** @type {Camera} */
+    camera;
+
+    /** @type {LightSource} */
+    light;
+
+    /** @type {LightField} */
+    lightField;
+
+    /** @type {Mesh} */
+    mesh;
+
+    /** @type {[Object]} */
+    objBufferInfo;
+
+    /** @type {BufferInfo} */
+    lfCameraBufferInfo
+
+    /** @type {ProgramInfo} */
+    mainProgramInfo;
+
+    /** @type {ProgramInfo} */
+    secondaryProgramInfo;
+
+    /** @type {Object} */
+    inputs;
+
+
+
     /**
      * Constructor initializes necessary variables (WebGL context, ObjParser, program, camera and light field)
      */
     constructor()
     {
-        this.canvas = document.getElementById("mainCanvas");
+        this.canvas = document.querySelector("canvas");
         this.createGl();
+
         this.objParser = new ObjParser(this.gl);
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
         this.lightField = new LightField(-5, 5, 15);
+
         this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
         this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
         this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
@@ -46,16 +86,10 @@ export default class Renderer
             throw Error("WebGL not supported");
         }
 
-        /**
-         * Main program using the regular shaders with textures and lights
-         * @type {ProgramInfo}
-         */
+        /** Main program using the regular shaders with textures and lights */
         this.mainProgramInfo = twgl.createProgramInfo(this.gl, [vertexShader, fragmentShader]);
 
-        /**
-         * Second program using the simplified shaders without textures and lights
-         * @type {ProgramInfo}
-         */
+        /** Second program using the simplified shaders without textures and lights */
         this.secondaryProgramInfo = twgl.createProgramInfo(this.gl, [simpleVertexShader, simpleFragmentShader]);
     }
 
@@ -71,8 +105,15 @@ export default class Renderer
             .addEventListener("change", (event) => this.handleFileUpload(event.target.files));
         document.getElementById("exportLf").onclick = () => this.exportLightField();
 
+        window.addEventListener("resize", (event) => this.render());
+        document.getElementById("resetCamera").onclick = () => {
+            this.camera.position = vec3.fromValues(0, 0, 30);
+            this.camera.pitch = 0;
+            this.camera.yaw = -90;
+            this.render();
+        };
         this.canvas.addEventListener("mousedown", (event) => {
-            if (!this.inputs.checkboxes.camera.cameraLookAt.checked) {
+            if (!this.inputs.checkboxes.camera.lookAt.checked) {
                 this.canvas.onmousemove = (ev) => {
                     const sensitivity = 0.3;
                     const previousScreenY = ev.screenY - ev.movementY;
@@ -80,13 +121,13 @@ export default class Renderer
                     const xOffset = ev.movementX * sensitivity;
                     const yOffset = (previousScreenY - ev.screenY) * sensitivity;
 
-                    this.camera.cameraYaw += xOffset;
-                    this.camera.cameraPitch += yOffset;
+                    this.camera.yaw += xOffset;
+                    this.camera.pitch += yOffset;
 
-                    if (this.camera.cameraPitch > 89) {
-                        this.camera.cameraPitch = 89;
-                    } else if (this.camera.cameraPitch < -89) {
-                        this.camera.cameraPitch = -89;
+                    if (this.camera.pitch > 89) {
+                        this.camera.pitch = 89;
+                    } else if (this.camera.pitch < -89) {
+                        this.camera.pitch = -89;
                     }
                     this.render();
                 };
@@ -107,64 +148,68 @@ export default class Renderer
         this.inputs = {
             sliders: {
                 camera: {
-                    cameraPosX: {
+                    posX: {
                         slider: document.getElementById("cameraXPos"),
                         sliderValue: document.getElementById("cameraXPosOut")
                     },
-                    cameraPosY: {
+                    posY: {
                         slider: document.getElementById("cameraYPos"),
                         sliderValue: document.getElementById("cameraYPosOut")
                     },
-                    cameraPosZ: {
+                    posZ: {
                         slider: document.getElementById("cameraZPos"),
                         sliderValue: document.getElementById("cameraZPosOut")
-                    },
-                    cameraPitch: {
-                        slider: document.getElementById("cameraPitch"),
-                        sliderValue: document.getElementById("cameraPitchOut")
-                    },
-                    cameraYaw: {
-                        slider: document.getElementById("cameraYaw"),
-                        sliderValue: document.getElementById("cameraYawOut")
                     }
                 },
 
                 light: {
-                    lightPosX: {
+                    posX: {
                         slider: document.getElementById("lightXPos"),
                         sliderValue: document.getElementById("lightXPosOut")
                     },
-                    lightPosY: {
+                    posY: {
                         slider: document.getElementById("lightYPos"),
                         sliderValue: document.getElementById("lightYPosOut")
                     },
-                    lightPosZ: {
+                    posZ: {
                         slider: document.getElementById("lightZPos"),
                         sliderValue: document.getElementById("lightZPosOut")
                     },
                 },
 
                 mesh: {
-                    meshPosX: {
+                    posX: {
                         slider: document.getElementById("meshXPos"),
                         sliderValue: document.getElementById("meshXPosOut")
                     },
-                    meshPosY: {
+                    posY: {
                         slider: document.getElementById("meshYPos"),
                         sliderValue: document.getElementById("meshYPosOut")
                     },
-                    meshPosZ: {
+                    posZ: {
                         slider: document.getElementById("meshZPos"),
                         sliderValue: document.getElementById("meshZPosOut")
+                    },
+                    rotX: {
+                        slider: document.getElementById("meshXRot"),
+                        sliderValue: document.getElementById("meshXRotOut")
+                    },
+                    rotY: {
+                        slider: document.getElementById("meshYRot"),
+                        sliderValue: document.getElementById("meshYRotOut")
+                    },
+                    rotZ: {
+                        slider: document.getElementById("meshZRot"),
+                        sliderValue: document.getElementById("meshZRotOut")
                     }
                 }
             },
 
             numbers: {
                 light: {
-                    lightColorRed: document.getElementById("lightRedColor"),
-                    lightColorGreen: document.getElementById("lightGreenColor"),
-                    lightColorBlue: document.getElementById("lightBlueColor")
+                    colorRed: document.getElementById("lightRedColor"),
+                    colorGreen: document.getElementById("lightGreenColor"),
+                    colorBlue: document.getElementById("lightBlueColor")
                 },
 
                 lightField: {
@@ -179,17 +224,17 @@ export default class Renderer
 
             checkboxes: {
                 camera: {
-                    cameraLookAt: document.getElementById("cameraLookAt")
+                    lookAt: document.getElementById("cameraLookAt")
                 }
             },
 
             selects: {
                 light: {
-                    lightPositionOptions: document.getElementById("lightPositionOptions")
+                    positionOptions: document.getElementById("lightPositionOptions")
                 },
 
                 lightField: {
-                    lightFieldCameraSelection: document.getElementById("lfCameraSelection")
+                    cameraSelection: document.getElementById("lfCameraSelection")
                 }
             },
 
@@ -212,17 +257,9 @@ export default class Renderer
                             this.initSelect(inputName, sceneObjectName, input);
                             break;
                         case "checkboxes":
-                            if (inputName === "cameraLookAt") {
-                                this.toggleSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
-                                input.oninput = function () {
-                                    if (this.checked) {
-                                        renderer.toggleSliders(sceneObjectName, true, ["cameraPitch", "cameraYaw"]);
-                                    } else {
-                                        renderer.toggleSliders(sceneObjectName, false, ["cameraPitch", "cameraYaw"]);
-                                    }
-                                    renderer.render();
-                                };
-                            }
+                            input.oninput = function () {
+                                renderer.render();
+                            };
                             break;
                         default:
                             break;
@@ -279,7 +316,7 @@ export default class Renderer
     initSelect(selectName, sceneObjectName, input)
     {
         const renderer = this;
-        if (selectName === "lightPositionOptions") {
+        if (selectName === "positionOptions" && sceneObjectName === "light") {
             this.toggleSliders(sceneObjectName, true);
             input.onchange = function () {
                 switch (this.value) {
@@ -293,7 +330,7 @@ export default class Renderer
                 }
                 renderer.render();
             };
-        } else if (selectName === "lightFieldCameraSelection") {
+        } else if (selectName === "cameraSelection" && sceneObjectName === "lightField") {
             this.lightField.setSelectedCamera(0, 0);
             this.updateLightFieldCameraSelection();
             input.onchange = function () {
@@ -333,11 +370,11 @@ export default class Renderer
     updateLightFieldCameraSelection()
     {
         const [selectedRow, selectedColumn] = this.lightField.selectedCameraIndex;
-        const optionsCount = this.inputs.selects.lightField.lightFieldCameraSelection.length - 1;
+        const optionsCount = this.inputs.selects.lightField.cameraSelection.length - 1;
 
         /** First remove all the options */
         for (let optionIndex = optionsCount; optionIndex >= 0; optionIndex--) {
-            this.inputs.selects.lightField.lightFieldCameraSelection.remove(optionIndex);
+            this.inputs.selects.lightField.cameraSelection.remove(optionIndex);
         }
 
         /** And then iterate over all the cameras and add the to the selection */
@@ -347,9 +384,9 @@ export default class Renderer
             row++;
             column++;
             option.text = "Kamera: " + row + "-" + column;
-            this.inputs.selects.lightField.lightFieldCameraSelection.add(option);
+            this.inputs.selects.lightField.cameraSelection.add(option);
         });
-        this.inputs.selects.lightField.lightFieldCameraSelection.value = selectedRow + "_" + selectedColumn;
+        this.inputs.selects.lightField.cameraSelection.value = selectedRow + "_" + selectedColumn;
     }
 
 
@@ -428,7 +465,6 @@ export default class Renderer
         this.gl.scissor(0, halfHeight, width, halfHeight);
         this.gl.clearColor(0.7, 0.7, 0.7, 1.0);
 
-        this.mesh.move();
         this.handleKeyboardInputs();
         this.renderCameraView(this.camera, effectiveHeight);
 
@@ -455,8 +491,8 @@ export default class Renderer
         const cameraFrontScaled = vec3.create();
         const cameraFrontCrossNormScaled = vec3.create();
 
-        vec3.scale(cameraFrontScaled, this.camera.cameraFront, cameraSpeed);
-        vec3.cross(cameraFrontCrossNormScaled, this.camera.cameraFront, this.camera.cameraUp);
+        vec3.scale(cameraFrontScaled, this.camera.front, cameraSpeed);
+        vec3.cross(cameraFrontCrossNormScaled, this.camera.front, this.camera.up);
         vec3.normalize(cameraFrontCrossNormScaled, cameraFrontCrossNormScaled);
         vec3.scale(cameraFrontCrossNormScaled, cameraFrontCrossNormScaled, cameraSpeed);
 
@@ -490,18 +526,19 @@ export default class Renderer
         this.gl.useProgram(this.mainProgramInfo.program);
 
         let lightPosition;
-        switch (this.inputs.selects.light.lightPositionOptions.value) {
+        switch (this.inputs.selects.light.positionOptions.value) {
             case "stickCamera":
                 lightPosition = this.camera.position;
                 break;
             case "stickLightField":
-                lightPosition = this.lightField.position;
+                lightPosition = this.lightField.selectedCamera.position;
                 break;
             case "free":
                 lightPosition = this.light.position;
                 break;
         }
 
+        this.mesh.move().rotate();
         const fieldOfView = glMatrix.toRadian(60),
             aspect = this.gl.canvas.clientWidth / height,
             zNear = 1,
@@ -514,7 +551,7 @@ export default class Renderer
         if (!(camera instanceof LightFieldCamera)) {
             const meshDirection = vec3.create();
             vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
-            const cameraTarget = this.inputs.checkboxes.camera.cameraLookAt.checked
+            const cameraTarget = this.inputs.checkboxes.camera.lookAt.checked
                 ? meshDirection
                 : camera.direction;
             camera.lookAt(cameraTarget);
@@ -538,7 +575,7 @@ export default class Renderer
 
         /** Uniforms that are the same for all parts */
         const sharedUniforms = {
-            u_worldViewProjection: camera.getWorldViewProjectionMatrix(this.mesh.meshMatrix),
+            u_worldViewProjection: camera.getWorldViewProjectionMatrix(this.mesh.matrix),
             u_worldInverseTranspose: this.mesh.inverseTransposeMatrix,
             u_viewWorldPosition: camera.position,
             u_lightWorldPosition: lightPosition,
@@ -549,7 +586,7 @@ export default class Renderer
         /** Sets uniforms, attributes and calls method for drawing */
         for (const {bufferInfo, material} of this.objBufferInfo) {
             twgl.setUniforms(this.mainProgramInfo, {
-                u_world: this.mesh.meshMatrix,
+                u_world: this.mesh.matrix,
                 ...material
             });
             twgl.setBuffersAndAttributes(this.gl, this.mainProgramInfo, bufferInfo);
@@ -611,6 +648,9 @@ export default class Renderer
      */
     handleFileUpload(files)
     {
+        if (files.length === 0) {
+            return;
+        }
         const filePromises = [];
         let objFiles = 0;
         let mtlFiles = 0;

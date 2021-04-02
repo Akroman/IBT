@@ -11,7 +11,7 @@
             <div class="row">
                 <div class="col-3">
                     <label for="objUpload">
-                        OBJ Soubor
+                        Soubory
                     </label>
                 </div>
                 <div class="col-2">
@@ -19,7 +19,7 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row" style="margin-top: 10px">
                 <div class="col-12">
                     <input value="Vytvořit light field" class="btn btn-secondary" type="button" id="exportLf">
                 </div>
@@ -76,6 +76,12 @@
                     </div>
                 </div>
 
+                <div class="row" style="margin: 10px 0">
+                    <div class="col-12">
+                        <input value="Resetovat pozici" class="btn btn-secondary" type="button" id="resetCamera">
+                    </div>
+                </div>
+
                 <div class="row">
                     Natočení
                 </div>
@@ -84,34 +90,6 @@
                     <div class="col">
                         <label for="cameraLookAt">Zaměřit na objekt</label>
                         <input type="checkbox" name="cameraRotation" id="cameraLookAt">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-2">
-                        <label for="cameraPitch">
-                            Pitch
-                        </label>
-                    </div>
-                    <div class="col-8 slidecontainer">
-                        <input type="range" step="0.1" min="-90" max="90" value="0" class="slider" id="cameraPitch">
-                    </div>
-                    <div class="col-2">
-                        <label id="cameraPitchOut"></label>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-2">
-                        <label for="cameraYaw">
-                            Yaw
-                        </label>
-                    </div>
-                    <div class="col-8 slidecontainer">
-                        <input type="range" step="0.1" min="-360" max="360" value="0" class="slider" id="cameraYaw">
-                    </div>
-                    <div class="col-2">
-                        <label id="cameraYawOut"></label>
                     </div>
                 </div>
             </div>
@@ -272,6 +250,56 @@
                         <label id="meshZPosOut"></label>
                     </div>
                 </div>
+
+                <div class="row">
+                    Rotace
+                </div>
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-1">
+                        <label for="meshXRot">
+                            X
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshXRot">
+                    </div>
+                    <div class="col-2">
+                        <label id="meshXRotOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="meshYRot">
+                            Y
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshYRot">
+                    </div>
+                    <div class="col-2">
+                        <label id="meshYRotOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-1">
+                        <label for="meshZRot">
+                            Z
+                        </label>
+                    </div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshZRot">
+                    </div>
+                    <div class="col-2">
+                        <label id="meshZRotOut"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+                <h5>Light field</h5>
             </div>
 
             <div class="sideBarSection">

@@ -7,6 +7,31 @@ import {vec3} from "gl-matrix";
  */
 export default class LightField
 {
+    /** @type {number} */
+    #posX;
+
+    /** @type {number} */
+    #posY;
+
+    /** @type {number} */
+    #posZ;
+
+    /** @type {number} */
+    horizontalCamerasCount;
+
+    /** @type {number} */
+    verticalCamerasCount;
+
+    /** @type {number} */
+    horizontalCameraSpace;
+
+    /** @type {number} */
+    verticalCameraSpace;
+
+    /** @type {[]} */
+    #cameraArray;
+
+
     /**
      * Initializes light field with default values
      * @param {number} positionX
@@ -15,21 +40,21 @@ export default class LightField
      */
     constructor(positionX, positionY, positionZ)
     {
-        this.lightFieldPosX = positionX;
-        this.lightFieldPosY = positionY;
-        this.lightFieldPosZ = positionZ;
+        this.#posX = positionX;
+        this.#posY = positionY;
+        this.#posZ = positionZ;
         this.horizontalCamerasCount = 8;
         this.verticalCamerasCount = 8;
         this.horizontalCameraSpace = 1.5;
         this.verticalCameraSpace = 1.5;
-        this.cameraArray = [];
+        this.#cameraArray = [];
     }
 
 
     /**
      * @returns {vec3}
      */
-    get position() { return vec3.fromValues(this.lightFieldPosX, this.lightFieldPosY, this.lightFieldPosZ); }
+    get position() { return vec3.fromValues(this.#posX, this.#posY, this.#posZ); }
 
 
     /**
@@ -39,28 +64,28 @@ export default class LightField
      */
     initCameras(horizontalCamerasCount = this.horizontalCamerasCount, verticalCamerasCount = this.verticalCamerasCount)
     {
-        const [selectedRow, selectedColumn] = !this.cameraArray.length
+        const [selectedRow, selectedColumn] = !this.#cameraArray.length
             ? [0, 0]
             : this.selectedCameraIndex;
 
-        this.cameraArray = [];
+        this.#cameraArray = [];
         this.horizontalCamerasCount = horizontalCamerasCount;
         this.verticalCamerasCount = verticalCamerasCount;
 
-        const zPosition = this.lightFieldPosZ;
-        let yPosition = this.lightFieldPosY;
-        let xPosition = this.lightFieldPosX;
+        const zPosition = this.#posZ;
+        let yPosition = this.#posY;
+        let xPosition = this.#posX;
         const lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
 
         /** Iterate over given number of rows and columns and create light field cameras */
         for (let row = 0; row < verticalCamerasCount; row++) {
-            this.cameraArray[row] = [];
+            this.#cameraArray[row] = [];
             for (let column = 0; column < horizontalCamerasCount; column++) {
-                this.cameraArray[row][column] = new LightFieldCamera(...lightFieldCameraPosition);
+                this.#cameraArray[row][column] = new LightFieldCamera(...lightFieldCameraPosition);
                 xPosition += this.horizontalCameraSpace;
                 vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
             }
-            xPosition = this.lightFieldPosX;
+            xPosition = this.#posX;
             yPosition -= this.verticalCameraSpace;
             vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
         }
@@ -122,10 +147,10 @@ export default class LightField
      */
     getCamera(row, column)
     {
-        if (!this.cameraArray[row][column]) {
+        if (!this.#cameraArray[row][column]) {
             throw new InvalidCameraIndexException("Invalid camera index");
         }
-        return this.cameraArray[row][column];
+        return this.#cameraArray[row][column];
     }
 
 

@@ -7,13 +7,57 @@ import Utils from "./utils";
  */
 export default class ObjParser
 {
+    /** @type {WebGLRenderingContext} */
+    #gl;
+
+    /** @type {[[number]]} */
+    #objPositions;
+
+    /** @type {[[number]]} */
+    #objTexcoords;
+
+    /** @type {[[number]]} */
+    #objNormals;
+
+    /** @type {[[number]]} */
+    #objColors;
+
+    /** @type {[]} */
+    #objVertexData;
+
+    /** @type {[]} */
+    #webglVertexData;
+
+    /** @type {Object} */
+    #geometry;
+
+    /** @type {[Object]} */
+    #geometries;
+
+    /** @type {[]} */
+    #materialLibs;
+
+    /** @type {string} */
+    #material;
+
+    /** @type {Object} */
+    #materialObject;
+
+    /** @type {Object} */
+    #materials;
+
+    /** @type {string} */
+    #object;
+
+
+
     /**
      * Constructor initializes all arrays and variables that hold parsed values from .obj file
      * @param {WebGLRenderingContext} gl
      */
     constructor(gl)
     {
-        this.gl = gl;
+        this.#gl = gl;
         this.init();
     }
 
@@ -23,41 +67,41 @@ export default class ObjParser
      */
     init()
     {
-        this.objPositions = [[0, 0, 0]];
-        this.objTexcoords = [[0, 0]];
-        this.objNormals = [[0, 0, 0]];
-        this.objColors = [[0, 0, 0]];
-        this.objVertexData = [
-            this.objPositions,
-            this.objTexcoords,
-            this.objNormals,
-            this.objColors
+        this.#objPositions = [[0, 0, 0]];
+        this.#objTexcoords = [[0, 0]];
+        this.#objNormals = [[0, 0, 0]];
+        this.#objColors = [[0, 0, 0]];
+        this.#objVertexData = [
+            this.#objPositions,
+            this.#objTexcoords,
+            this.#objNormals,
+            this.#objColors
         ];
-        this.webglVertexData = [
+        this.#webglVertexData = [
             [],   // positions
             [],   // texcoords
             [],   // normals
             []    // colors
         ];
 
-        this.newGeometry();
-        this.geometries = [];
-        this.materialLibs = [];
-        this.material = 'default';
-        this.materialObject = {};
-        this.materials = {
+        this.#newGeometry();
+        this.#geometries = [];
+        this.#materialLibs = [];
+        this.#material = 'default';
+        this.#materialObject = {};
+        this.#materials = {
             default: {
                 u_diffuse: [1, 1, 1],
                 u_ambient: [0, 0, 0],
                 u_specular: [1, 1, 1],
                 u_shininess: 400,
                 u_opacity: 1,
-                u_diffuseMap: Utils.create1PixelTexture(this.gl, [255, 255, 255, 255]),
-                u_specularMap: Utils.create1PixelTexture(this.gl, [255, 255, 255, 255]),
-                u_normalMap: Utils.create1PixelTexture(this.gl, [127, 127, 255, 0])
+                u_diffuseMap: Utils.create1PixelTexture(this.#gl, [255, 255, 255, 255]),
+                u_specularMap: Utils.create1PixelTexture(this.#gl, [255, 255, 255, 255]),
+                u_normalMap: Utils.create1PixelTexture(this.#gl, [127, 127, 255, 0])
             }
         };
-        this.object = 'default';
+        this.#object = 'default';
     }
 
 
@@ -85,16 +129,16 @@ export default class ObjParser
             }
             const [, keyword, unparsedArguments] = match;
             const parts = line.split(/\s+/).slice(1).filter((value ) => value !== "");
-            this.addObjData(keyword, parts, unparsedArguments);
+            this.#addObjData(keyword, parts, unparsedArguments);
         }
 
         /** Cycle through geometry data and remove any empty elements (eg. remove empty texcoords, etc.) */
-        for (const geometry of this.geometries) {
+        for (const geometry of this.#geometries) {
             geometry.data = Object.fromEntries(Object.entries(geometry.data).filter(([, array]) => array.length > 0));
         }
 
         const textureNames = textures.map((textureObject) => Object.keys(textureObject)[0]);
-        for (const material of Object.values(this.materials)) {
+        for (const material of Object.values(this.#materials)) {
             /** First iterate over all maps and find appropriate texture in textures */
             Object.entries(material)
                 .filter(([key]) => key.endsWith("Map"))
@@ -108,11 +152,11 @@ export default class ObjParser
                 .filter(([key]) => key.endsWith("Map"))
                 .filter(([key, fileName]) => !textureNames.includes(fileName) && !(fileName instanceof WebGLTexture))
                 .forEach(([key]) => {
-                    material[key] = this.materials.default[key];
+                    material[key] = this.#materials.default[key];
                 });
         }
 
-        return new Mesh(this.geometries, this.materialLibs, this.materials);
+        return new Mesh(this.#geometries, this.#materialLibs, this.#materials);
     }
 
 
@@ -122,83 +166,83 @@ export default class ObjParser
      * @param {array} data - array containing elements from rest of the line (after the keyword)
      * @param {string} unparsedArguments - string containing rest of the line (after the keyword), this is used only for materials or objects
      */
-    addObjData(keyword, data, unparsedArguments)
+    #addObjData(keyword, data, unparsedArguments)
     {
         switch (keyword) {
             /** Keywords from .obj files */
             case 'v':
                 if (data.length > 3) {
-                    this.objPositions.push(data.slice(0, 3).map(parseFloat));
-                    this.objColors.push(data.slice(3).map(parseFloat));
+                    this.#objPositions.push(data.slice(0, 3).map(parseFloat));
+                    this.#objColors.push(data.slice(3).map(parseFloat));
                 } else {
-                    this.objPositions.push(data.map(parseFloat));
+                    this.#objPositions.push(data.map(parseFloat));
                 }
                 break;
             case 'vn':
-                this.objNormals.push(data.map(parseFloat));
+                this.#objNormals.push(data.map(parseFloat));
                 break;
             case 'vt':
-                this.objTexcoords.push(data.map(parseFloat));
+                this.#objTexcoords.push(data.map(parseFloat));
                 break;
             case 'f':
-                this.setGeometry();
+                this.#setGeometry();
                 const trianglesCount = data.length - 2;
                 for (let triangle = 0; triangle < trianglesCount; triangle++) {
-                    this.addVertex(data[0]);
-                    this.addVertex(data[triangle + 1]);
-                    this.addVertex(data[triangle + 2]);
+                    this.#addVertex(data[0]);
+                    this.#addVertex(data[triangle + 1]);
+                    this.#addVertex(data[triangle + 2]);
                 }
                 break;
             case 'usemtl':
-                this.material = unparsedArguments;
-                this.newGeometry();
+                this.#material = unparsedArguments;
+                this.#newGeometry();
                 break;
             case 'mtllib':
-                this.materialLibs.push(unparsedArguments);
-                this.newGeometry();
+                this.#materialLibs.push(unparsedArguments);
+                this.#newGeometry();
                 break;
             case 'o':
-                this.object = unparsedArguments;
-                this.newGeometry();
+                this.#object = unparsedArguments;
+                this.#newGeometry();
                 break;
 
             /** Keywords from .mtl files */
             case 'newmtl':
-                this.materialObject = JSON.parse(JSON.stringify(this.materials.default));
-                this.materials[unparsedArguments] = this.materialObject;
+                this.#materialObject = JSON.parse(JSON.stringify(this.#materials.default));
+                this.#materials[unparsedArguments] = this.#materialObject;
                 break;
             case 'Ns':
-                this.materialObject.u_shininess = parseFloat(data[0]);
+                this.#materialObject.u_shininess = parseFloat(data[0]);
                 break;
             case 'Ka':
-                this.materialObject.u_ambient = data.map(parseFloat);
+                this.#materialObject.u_ambient = data.map(parseFloat);
                 break;
             case 'Kd':
-                this.materialObject.u_diffuse = data.map(parseFloat);
+                this.#materialObject.u_diffuse = data.map(parseFloat);
                 break;
             case 'Ks':
-                this.materialObject.u_specular = data.map(parseFloat);
+                this.#materialObject.u_specular = data.map(parseFloat);
                 break;
             case 'Ke':
-                this.materialObject.u_emissive = data.map(parseFloat);
+                this.#materialObject.u_emissive = data.map(parseFloat);
                 break;
             case 'Ni':
-                this.materialObject.u_opticalDensity = parseFloat(data[0]);
+                this.#materialObject.u_opticalDensity = parseFloat(data[0]);
                 break;
             case 'd':
-                this.materialObject.u_opacity = parseFloat(data[0]);
+                this.#materialObject.u_opacity = parseFloat(data[0]);
                 break;
             case 'illum':
-                this.materialObject.u_illum = parseInt(data[0]);
+                this.#materialObject.u_illum = parseInt(data[0]);
                 break;
             case 'map_Kd':
-                this.materialObject.u_diffuseMap = unparsedArguments;
+                this.#materialObject.u_diffuseMap = unparsedArguments;
                 break;
             case 'map_Ns':
-                this.materialObject.u_specularMap = unparsedArguments;
+                this.#materialObject.u_specularMap = unparsedArguments;
                 break;
             case 'mapBump':
-                this.materialObject.u_normalMap = unparsedArguments;
+                this.#materialObject.u_normalMap = unparsedArguments;
                 break;
             default:
                 break;
@@ -209,16 +253,16 @@ export default class ObjParser
     /**
      * @param {string} vertex
      */
-    addVertex(vertex)
+    #addVertex(vertex)
     {
         vertex.split('/')
             .filter((value) => value !== "")
             .forEach((objIndex, i) => {
                 objIndex = parseInt(objIndex);
-                const index = objIndex + (objIndex >= 0 ? 0 : this.objVertexData[i].length);
-                this.webglVertexData[i].push(...this.objVertexData[i][index]);
-                if (i === 0 && this.objColors.length > 1) {
-                    this.geometry.data.color.push(...this.objColors[index]);
+                const index = objIndex + (objIndex >= 0 ? 0 : this.#objVertexData[i].length);
+                this.#webglVertexData[i].push(...this.#objVertexData[i][index]);
+                if (i === 0 && this.#objColors.length > 1) {
+                    this.#geometry.data.color.push(...this.#objColors[index]);
                 }
             });
     }
@@ -227,10 +271,10 @@ export default class ObjParser
     /**
      * Resets geometry, gets called everytime the parser runs into mtllib or usemtl keyword
      */
-    newGeometry()
+    #newGeometry()
     {
-        if (this.geometry !== undefined && this.geometry.data.position.length) {
-            this.geometry = undefined;
+        if (this.#geometry !== undefined && this.#geometry.data.position.length) {
+            this.#geometry = undefined;
         }
     }
 
@@ -239,22 +283,22 @@ export default class ObjParser
      * Initializes geometry, parser calls this function everytime it runs into an f keyword, because there might be .obj files without usemtl keyword
      * Geometry holds object name, material name and data object, which consists of positions, texcoord and normals
      */
-    setGeometry()
+    #setGeometry()
     {
-        if (!this.geometry) {
+        if (!this.#geometry) {
             const position = [];
             const texcoord = [];
             const normal = [];
             const color = [];
-            this.webglVertexData = [
+            this.#webglVertexData = [
                 position,
                 texcoord,
                 normal,
                 color
             ];
-            this.geometry = {
-                object: this.object,
-                material: this.material,
+            this.#geometry = {
+                object: this.#object,
+                material: this.#material,
                 data: {
                     position,
                     texcoord,
@@ -262,7 +306,7 @@ export default class ObjParser
                     color
                 }
             };
-            this.geometries.push(this.geometry);
+            this.#geometries.push(this.#geometry);
         }
     }
 }

@@ -1,4 +1,5 @@
 module.exports = {
+    watch: true,
     mode: "development",
     module: {
         rules: [
@@ -17,6 +18,16 @@ module.exports = {
             {
                 test: /\.(obj|mtl)$/i,
                 use: 'raw-loader',
+            },
+            {
+                test: /\.m?js$/,
+                exclude: /(node_modules)/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env']
+                    }
+                }
             }
         ]
     }

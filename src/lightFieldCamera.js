@@ -8,6 +8,11 @@ import {mat4} from "gl-matrix";
  */
 export default class LightFieldCamera extends Camera
 {
+    /** @type {boolean} */
+    selected;
+
+
+
     /**
      * @param {number} positionX
      * @param {number} positionY

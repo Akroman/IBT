@@ -8,6 +8,35 @@ import {glMatrix} from "gl-matrix";
  */
 export default class Camera
 {
+    /** @type {number} */
+    posX;
+
+    /** @type {number} */
+    posY;
+
+    /** @type {number} */
+    posZ;
+
+    /** @type {number} */
+    pitch;
+
+    /** @type {number} */
+    yaw;
+
+    /** @type {vec3} */
+    front;
+
+    /** @type {vec3} */
+    up;
+
+    /** @type {mat4} */
+    _matrix;
+
+    /** @type {mat4} */
+    _projectionMatrix;
+
+
+
     /**
      * Constructor creates camera matrix and sets initial position of the camera
      * @param {number} positionX
@@ -16,27 +45,27 @@ export default class Camera
      */
     constructor(positionX, positionY, positionZ)
     {
-        this.cameraPosX = positionX;
-        this.cameraPosY = positionY;
-        this.cameraPosZ = positionZ;
-        this.cameraPitch = 0;
-        this.cameraYaw = -90;
-        this.cameraFront = vec3.fromValues(0, 0, -1);
-        this.cameraUp = vec3.fromValues(0, 1, 0);
-        this.cameraMatrix = mat4.create();
+        this.posX = positionX;
+        this.posY = positionY;
+        this.posZ = positionZ;
+        this.pitch = 0;
+        this.yaw = -90;
+        this.front = vec3.fromValues(0, 0, -1);
+        this.up = vec3.fromValues(0, 1, 0);
+        this._matrix = mat4.create();
     }
 
 
     /**
      * @returns {vec3} vec3 containing X, Y and Z positions of camera
      */
-    get position() { return vec3.fromValues(this.cameraPosX, this.cameraPosY, this.cameraPosZ); }
+    get position() { return vec3.fromValues(this.posX, this.posY, this.posZ); }
 
 
     /**
      * @param {vec3} position
      */
-    set position(position) { [this.cameraPosX, this.cameraPosY, this.cameraPosZ] = position; }
+    set position(position) { [this.posX, this.posY, this.posZ] = position; }
 
 
     /**
@@ -44,11 +73,11 @@ export default class Camera
      */
     get viewProjectionMatrix()
     {
-        if (this.projectionMatrix === undefined) {
+        if (this._projectionMatrix === undefined) {
             throw new InvalidCameraStateException("Error: projection matrix must be set to get viewProjectionMatrix (use setPerspective)");
         }
         const viewProjectionMatrix = mat4.create();
-        mat4.multiply(viewProjectionMatrix, this.projectionMatrix, this.cameraMatrix);
+        mat4.multiply(viewProjectionMatrix, this._projectionMatrix, this._matrix);
         return viewProjectionMatrix;
     }
 
@@ -69,14 +98,14 @@ export default class Camera
      */
     get direction()
     {
-        this.cameraFront = vec3.fromValues(
-            Math.cos(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch)),
-            Math.sin(glMatrix.toRadian(this.cameraPitch)),
-            Math.sin(glMatrix.toRadian(this.cameraYaw)) * Math.cos(glMatrix.toRadian(this.cameraPitch))
+        this.front = vec3.fromValues(
+            Math.cos(glMatrix.toRadian(this.yaw)) * Math.cos(glMatrix.toRadian(this.pitch)),
+            Math.sin(glMatrix.toRadian(this.pitch)),
+            Math.sin(glMatrix.toRadian(this.yaw)) * Math.cos(glMatrix.toRadian(this.pitch))
         );
-        vec3.normalize(this.cameraFront, this.cameraFront);
+        vec3.normalize(this.front, this.front);
         const direction = vec3.create();
-        vec3.add(direction, this.position, this.cameraFront);
+        vec3.add(direction, this.position, this.front);
         return direction;
     }
 
@@ -90,8 +119,8 @@ export default class Camera
      */
     setPerspective(fieldOfView, aspect, zNear, zFar)
     {
-        this.projectionMatrix = mat4.create();
-        mat4.perspective(this.projectionMatrix, fieldOfView, aspect, zNear, zFar);
+        this._projectionMatrix = mat4.create();
+        mat4.perspective(this._projectionMatrix, fieldOfView, aspect, zNear, zFar);
         return this;
     }
 
@@ -102,9 +131,9 @@ export default class Camera
      * @param {vec3} up
      * @returns {Camera}
      */
-    lookAt(target, up = this.cameraUp)
+    lookAt(target, up = this.up)
     {
-        mat4.lookAt(this.cameraMatrix, this.position, target, up);
+        mat4.lookAt(this._matrix, this.position, target, up);
         return this;
     }
 
@@ -117,9 +146,9 @@ export default class Camera
     move(position = this.position)
     {
         this.position = position;
-        this.cameraMatrix = mat4.create();
-        mat4.translate(this.cameraMatrix, this.cameraMatrix, position);
-        mat4.invert(this.cameraMatrix, this.cameraMatrix);
+        this._matrix = mat4.create();
+        mat4.translate(this._matrix, this._matrix, position);
+        mat4.invert(this._matrix, this._matrix);
         return this;
     }
 }

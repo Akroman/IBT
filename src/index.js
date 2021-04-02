@@ -11,8 +11,10 @@ import('bootstrap');
 
 try {
     const renderer = new Renderer();
-    renderer.initInputs()
-        .render();
+    window.addEventListener("load", (event) => {
+        renderer.initInputs()
+            .render();
+    });
 } catch (exception) {
     console.warn(exception);
 }

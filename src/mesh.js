@@ -1,5 +1,5 @@
 import * as twgl from "twgl.js";
-import {mat4, vec2, vec3} from "gl-matrix";
+import {glMatrix, mat4, vec2, vec3} from "gl-matrix";
 
 
 /**
@@ -7,6 +7,35 @@ import {mat4, vec2, vec3} from "gl-matrix";
  */
 export default class Mesh
 {
+    /** @type {number} */
+    posX = 0;
+
+    /** @type {number} */
+    posY = 0;
+
+    /** @type {number} */
+    posZ = 0;
+
+    /** @type {number} */
+    rotX = 0;
+
+    /** @type {number} */
+    rotY = 0;
+
+    /** @type {number} */
+    rotZ = 0;
+
+    /** @type {[Object]} */
+    #geometries;
+
+    /** @type {Object} */
+    #materials
+
+    /** @type {mat4} */
+    matrix;
+
+
+
     /**
      * @param {[Object]} geometries
      * @param {[String]} materialLibs
@@ -14,13 +43,10 @@ export default class Mesh
      */
     constructor(geometries, materialLibs, materials)
     {
-        this.meshPosX = 0;
-        this.meshPosY = 0;
-        this.meshPosZ = 0;
-        this.geometries = geometries;
-        this.materials = materials;
+        this.#geometries = geometries;
+        this.#materials = materials;
         this.materialLibs = materialLibs;
-        this.meshMatrix = mat4.create();
+        this.matrix = mat4.create();
         this.center();
     }
 
@@ -28,13 +54,13 @@ export default class Mesh
     /**
      * @returns {vec3}
      */
-    get position() { return vec3.fromValues(this.meshPosX, this.meshPosY, this.meshPosZ); }
+    get position() { return vec3.fromValues(this.posX, this.posY, this.posZ); }
 
 
     /**
      * @param {vec3} position
      */
-    set position(position) { [this.meshPosX, this.meshPosY, this.meshPosZ] = position; }
+    set position(position) { [this.posX, this.posY, this.posZ] = position; }
 
 
     /**
@@ -43,7 +69,7 @@ export default class Mesh
     get inverseTransposeMatrix()
     {
         const worldInverseTransposeMatrix = mat4.create();
-        mat4.invert(worldInverseTransposeMatrix, this.meshMatrix);
+        mat4.invert(worldInverseTransposeMatrix, this.matrix);
         mat4.transpose(worldInverseTransposeMatrix, worldInverseTransposeMatrix);
         return worldInverseTransposeMatrix;
     }
@@ -76,12 +102,25 @@ export default class Mesh
     /**
      * Moves mesh to the given position
      * @param {vec3} position
+     * @return {Mesh}
      */
     move(position = this.position)
     {
         this.position = position;
-        this.meshMatrix = mat4.create();
-        mat4.translate(this.meshMatrix, this.meshMatrix, position);
+        this.matrix = mat4.create();
+        mat4.translate(this.matrix, this.matrix, position);
+        return this;
+    }
+
+
+    /**
+     * Applies rotation to the mesh
+     */
+    rotate()
+    {
+        mat4.rotateX(this.matrix, this.matrix, glMatrix.toRadian(this.rotX));
+        mat4.rotateY(this.matrix, this.matrix, glMatrix.toRadian(this.rotY));
+        mat4.rotateZ(this.matrix, this.matrix, glMatrix.toRadian(this.rotZ));
     }
 
 
@@ -90,7 +129,7 @@ export default class Mesh
      * @param {[]} positions
      * @returns {Object}
      */
-    getExtents(positions)
+    #getExtents(positions)
     {
         const min = positions.slice(0, 3);
         const max = positions.slice(0, 3);
@@ -111,8 +150,8 @@ export default class Mesh
      */
     get geometriesExtents()
     {
-        return this.geometries.reduce(({min, max}, {data}) => {
-            const minMax = this.getExtents(data.position);
+        return this.#geometries.reduce(({min, max}, {data}) => {
+            const minMax = this.#getExtents(data.position);
             return {
                 min: min.map((min, index) => Math.min(minMax.min[index], min)),
                 max: max.map((max, index) => Math.max(minMax.max[index], max))
@@ -127,11 +166,11 @@ export default class Mesh
     /**
      * Iterates over geometries and maps colors
      * @param gl
-     * @returns {Object}
+     * @returns {[Object]}
      */
     getBufferInfo(gl)
     {
-        return this.geometries.map(({material, data}) => {
+        return this.#geometries.map(({material, data}) => {
             if (data.color) {
                 if (data.position.length === data.color.length) {
                     data.color = {
@@ -144,13 +183,13 @@ export default class Mesh
             }
 
             data.tangent = data.texcoord && data.normal
-                ? this.generateTangents(data.position, data.texcoord)
+                ? this.#generateTangents(data.position, data.texcoord)
                 : { value: [1, 0, 0] };
             data.texcoord ??= { value: [0, 0] };
             data.normal ??= { value: [0, 0, 1] };
 
             return {
-                material: this.materials[material] ?? this.materials.default,
+                material: this.#materials[material] ?? this.#materials.default,
                 bufferInfo: twgl.createBufferInfoFromArrays(gl, data)
             };
         });
@@ -161,7 +200,7 @@ export default class Mesh
      * @param {[number]} positions
      * @returns {function(): *}
      */
-    createUnindexedIterator(positions)
+    #createUnindexedIterator(positions)
     {
         let ndx = 0;
         const fn = () => ndx++;
@@ -177,9 +216,9 @@ export default class Mesh
      * @param {[number]} texcoord
      * @returns {[number]}
      */
-    generateTangents(position, texcoord)
+    #generateTangents(position, texcoord)
     {
-        const getNextIndex = this.createUnindexedIterator(position);
+        const getNextIndex = this.#createUnindexedIterator(position);
         const numFaceVerts = getNextIndex.numElements;
         const numFaces = numFaceVerts / 3;
 

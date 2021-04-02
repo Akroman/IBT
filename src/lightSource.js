@@ -6,6 +6,17 @@ import {vec3} from "gl-matrix";
  */
 export default class LightSource
 {
+    /** @type {number} */
+    posX;
+
+    /** @type {number} */
+    posY;
+
+    /** @type {number} */
+    posZ;
+
+
+
     /**
      * @param {int} positionX
      * @param {int} positionY
@@ -13,25 +24,25 @@ export default class LightSource
      */
     constructor(positionX, positionY, positionZ)
     {
-        this.lightPosX = positionX;
-        this.lightPosY = positionY;
-        this.lightPosZ = positionZ;
-        this.lightColorRed = 1;
-        this.lightColorGreen = 1;
-        this.lightColorBlue = 1;
+        this.posX = positionX;
+        this.posY = positionY;
+        this.posZ = positionZ;
+        this.colorRed = 1;
+        this.colorGreen = 1;
+        this.colorBlue = 1;
     }
 
 
     /**
      * @returns {vec3}
      */
-    get position() { return vec3.fromValues(this.lightPosX, this.lightPosY, this.lightPosZ); }
+    get position() { return vec3.fromValues(this.posX, this.posY, this.posZ); }
 
 
     /**
      * @param {vec3} position
      */
-    set position(position) { [this.lightPosX, this.lightPosY, this.lightPosZ] = position; }
+    set position(position) { [this.posX, this.posY, this.posZ] = position; }
 
 
     /**
@@ -39,7 +50,7 @@ export default class LightSource
      */
     get color()
     {
-        const color = vec3.fromValues(this.lightColorRed, this.lightColorGreen, this.lightColorBlue);
+        const color = vec3.fromValues(this.colorRed, this.colorGreen, this.colorBlue);
         vec3.normalize(color, color);
         return color;
     }
