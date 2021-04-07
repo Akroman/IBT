@@ -1,1 +1,1 @@
-web: light-server -s ./dist
+web: light-server -s ./dist -p 80
