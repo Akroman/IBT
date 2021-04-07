@@ -1,1 +1,1 @@
-web: light-server -s ./dist -p 80
+web: light-server -s ./dist -p $PORT
