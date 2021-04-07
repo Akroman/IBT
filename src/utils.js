@@ -14,21 +14,6 @@ export default class Utils
 
 
     /**
-     * Creates canvas with given width and height
-     * @param {number} width
-     * @param {number} height
-     * @returns {HTMLCanvasElement}
-     */
-    static createCanvas(width, height)
-    {
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        return canvas;
-    }
-
-
-    /**
      * @param {number} value
      * @returns {boolean}
      */
@@ -60,5 +45,12 @@ export default class Utils
             new Uint8Array(pixel)
         );
         return texture;
+    }
+
+
+    static arrayEquals(firstArray, secondArray)
+    {
+        return firstArray.length === secondArray.length
+            && firstArray.every((val, index) => val === secondArray[index]);
     }
 }

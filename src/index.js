@@ -11,10 +11,8 @@ import('bootstrap');
 
 try {
     const renderer = new Renderer();
-    window.addEventListener("load", (event) => {
-        renderer.initInputs()
-            .render();
-    });
+    renderer.initInputs();
+    requestAnimationFrame((timestamp) => renderer.render());
 } catch (exception) {
     console.warn(exception);
 }

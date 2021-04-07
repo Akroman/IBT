@@ -1,0 +1,1 @@
+web: light-server -s ./dist

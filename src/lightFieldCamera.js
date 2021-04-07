@@ -11,6 +11,12 @@ export default class LightFieldCamera extends Camera
     /** @type {boolean} */
     selected;
 
+    /** @type {[number]} */
+    color;
+
+    /** @type {[number]} */
+    static SELECTED_COLOR = [255, 0, 0, 255];
+
 
 
     /**

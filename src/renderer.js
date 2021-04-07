@@ -1,4 +1,4 @@
-import {glMatrix, vec3} from "gl-matrix";
+import {glMatrix, mat4, vec3} from "gl-matrix";
 import * as twgl from "twgl.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -55,6 +55,21 @@ export default class Renderer
     /** @type {Object} */
     inputs;
 
+    /** @type {WebGLFramebuffer} */
+    pickingFrameBuffer;
+
+    /** @type {WebGLRenderbuffer} */
+    pickingDepthBuffer;
+
+    /** @type {WebGLTexture} */
+    pickingTexture;
+
+    /** @type {?number} */
+    mouseX = null;
+
+    /** @type {?number} */
+    mouseY = null;
+
 
 
     /**
@@ -64,6 +79,7 @@ export default class Renderer
     {
         this.canvas = document.querySelector("canvas");
         this.createGl();
+        this.initPickingFrameBuffer();
 
         this.objParser = new ObjParser(this.gl);
         this.camera = new Camera(0, 0, 30);
@@ -95,6 +111,34 @@ export default class Renderer
 
 
     /**
+     * Initializes necessary buffers and texture to handle picking
+     */
+    initPickingFrameBuffer()
+    {
+        /** Create a texture to render to */
+        this.pickingTexture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.pickingTexture);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        /** Create a depth renderbuffer */
+        this.pickingDepthBuffer = this.gl.createRenderbuffer();
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.pickingDepthBuffer);
+
+        /** Create and bind the framebuffer */
+        this.pickingFrameBuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pickingFrameBuffer);
+
+        /** Attach the texture as the first color attachment */
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.pickingTexture, 0);
+
+        /** Make a depth buffer and the same size as the targetTexture */
+        this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, this.pickingDepthBuffer);
+    }
+
+
+    /**
      * Initiates inputs to handle value changes (display values and re-render scene)
      * Creates event listener for parsing .obj file on upload
      * @returns {Renderer}
@@ -105,63 +149,58 @@ export default class Renderer
             .addEventListener("change", (event) => this.handleFileUpload(event.target.files));
         document.getElementById("exportLf").onclick = () => this.exportLightField();
 
-        window.addEventListener("resize", (event) => this.render());
         document.getElementById("resetCamera").onclick = () => {
             this.camera.position = vec3.fromValues(0, 0, 30);
             this.camera.pitch = 0;
             this.camera.yaw = -90;
-            this.render();
         };
+        document.getElementById("cameraLookAt").onclick = () => {
+            const meshDirection = vec3.create();
+            vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
+            this.camera.lookAt(meshDirection);
+            this.camera.pitch = Math.asin(-this.camera._matrix[11]);
+            this.camera.yaw = Math.atan2(this.camera._matrix[7], this.camera._matrix[15]);
+        };
+
         this.canvas.addEventListener("mousedown", (event) => {
-            if (!this.inputs.checkboxes.camera.lookAt.checked) {
-                this.canvas.onmousemove = (ev) => {
-                    const sensitivity = 0.3;
-                    const previousScreenY = ev.screenY - ev.movementY;
+            const rect = event.target.getBoundingClientRect();
+            this.mouseX = event.clientX - rect.left;
+            this.mouseY = event.clientY - rect.top;
 
-                    const xOffset = ev.movementX * sensitivity;
-                    const yOffset = (previousScreenY - ev.screenY) * sensitivity;
+            this.canvas.onmousemove = (ev) => {
+                this.mouseX = null;
+                this.mouseY = null;
 
-                    this.camera.yaw += xOffset;
-                    this.camera.pitch += yOffset;
+                const sensitivity = 0.3;
+                const previousScreenY = ev.screenY - ev.movementY;
 
-                    if (this.camera.pitch > 89) {
-                        this.camera.pitch = 89;
-                    } else if (this.camera.pitch < -89) {
-                        this.camera.pitch = -89;
-                    }
-                    this.render();
-                };
-            }
+                const xOffset = ev.movementX * sensitivity;
+                const yOffset = (previousScreenY - ev.screenY) * sensitivity;
+
+                this.camera.yaw += xOffset;
+                this.camera.pitch += yOffset;
+
+                if (this.camera.pitch > 89) {
+                    this.camera.pitch = 89;
+                } else if (this.camera.pitch < -89) {
+                    this.camera.pitch = -89;
+                }
+            };
         });
         this.canvas.addEventListener("mouseup", (event) => {
+            this.mouseX = null;
+            this.mouseY = null;
             this.canvas.onmousemove = null;
         });
         this.canvas.addEventListener("keydown", (event) => {
             this.inputs.keys[event.keyCode] = true;
-            this.render();
         });
         this.canvas.addEventListener("keyup", (event) => {
             this.inputs.keys[event.keyCode] = false;
-            this.render();
         });
 
         this.inputs = {
             sliders: {
-                camera: {
-                    posX: {
-                        slider: document.getElementById("cameraXPos"),
-                        sliderValue: document.getElementById("cameraXPosOut")
-                    },
-                    posY: {
-                        slider: document.getElementById("cameraYPos"),
-                        sliderValue: document.getElementById("cameraYPosOut")
-                    },
-                    posZ: {
-                        slider: document.getElementById("cameraZPos"),
-                        sliderValue: document.getElementById("cameraZPosOut")
-                    }
-                },
-
                 light: {
                     posX: {
                         slider: document.getElementById("lightXPos"),
@@ -242,7 +281,6 @@ export default class Renderer
         }
 
         /** Cycles through all inputs and initializes them */
-        const renderer = this;
         for (const [inputType, sceneObjects] of Object.entries(this.inputs)) {
             for (const [sceneObjectName, inputs] of Object.entries(sceneObjects)) {
                 for (const [inputName, input] of Object.entries(inputs)) {
@@ -255,11 +293,6 @@ export default class Renderer
                             break;
                         case "selects":
                             this.initSelect(inputName, sceneObjectName, input);
-                            break;
-                        case "checkboxes":
-                            input.oninput = function () {
-                                renderer.render();
-                            };
                             break;
                         default:
                             break;
@@ -285,7 +318,6 @@ export default class Renderer
             input.value = Utils.convertRange(this.light[numberName], [0, 1], [0, 255]);
             input.oninput = function () {
                 renderer.light[numberName] = Utils.convertRange(parseInt(this.value), [0, 255], [0, 1]);
-                renderer.render();
             };
         } else if (sceneObjectName === "lightField") {
             if (!numberName.startsWith("resolution")) {
@@ -300,7 +332,6 @@ export default class Renderer
                         parseInt(renderer.inputs.numbers.lightField.verticalCamerasCount.value)
                     );
                     renderer.updateLightFieldCameraSelection();
-                    renderer.render();
                 };
             }
         }
@@ -328,7 +359,6 @@ export default class Renderer
                         renderer.toggleSliders(sceneObjectName, false);
                         break;
                 }
-                renderer.render();
             };
         } else if (selectName === "cameraSelection" && sceneObjectName === "lightField") {
             this.lightField.setSelectedCamera(0, 0);
@@ -338,7 +368,6 @@ export default class Renderer
                 const row = parseInt(rowAndColumn[0]);
                 const column = parseInt(rowAndColumn[1]);
                 renderer.lightField.setSelectedCamera(row, column);
-                renderer.render();
             };
         }
     }
@@ -359,7 +388,6 @@ export default class Renderer
             const value = parseFloat(this.value);
             input.sliderValue.innerHTML = value;
             renderer[sceneObjectName][sliderName] = value;
-            renderer.render();
         };
     }
 
@@ -449,6 +477,29 @@ export default class Renderer
 
 
     /**
+     * Sets size of picking depth buffer
+     */
+    setPickingFramebufferAttachmentSizes()
+    {
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.pickingTexture);
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            this.gl.canvas.width,
+            this.gl.canvas.height,
+            0,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            null
+        );
+
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.pickingDepthBuffer);
+        this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, this.gl.canvas.width, this.gl.canvas.height);
+    }
+
+
+    /**
      * Main function of program, passes parsed data to WebGL and handles drawing scene
      */
     render()
@@ -457,6 +508,7 @@ export default class Renderer
 
         /** On the upper half of canvas draw view from the camera */
         twgl.resizeCanvasToDisplaySize(this.gl.canvas);
+        this.setPickingFramebufferAttachmentSizes();
         const {width, height} = this.gl.canvas;
         const halfHeight = height / 2;
         const effectiveHeight = this.gl.canvas.clientHeight / 2;
@@ -478,6 +530,7 @@ export default class Renderer
         if (lfCamera) {
             this.renderCameraView(lfCamera, effectiveHeight);
         }
+        requestAnimationFrame((timestamp) => this.render());
     }
 
 
@@ -549,12 +602,7 @@ export default class Renderer
             .move();
         /** We need to make camera look in its direction and draw the light field representation */
         if (!(camera instanceof LightFieldCamera)) {
-            const meshDirection = vec3.create();
-            vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
-            const cameraTarget = this.inputs.checkboxes.camera.lookAt.checked
-                ? meshDirection
-                : camera.direction;
-            camera.lookAt(cameraTarget);
+            camera.lookAt();
 
             /**
              * Iterate over cameras and draw them with the simple shaders
@@ -563,12 +611,22 @@ export default class Renderer
             const lfCameraRenderCallback = (lfCamera) => {
                 twgl.setUniforms(this.secondaryProgramInfo, {
                     u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
-                    u_color: lfCamera.selected ? [1, 0, 0, 1] : [0, 0, 0, 1]
+                    u_color: lfCamera.color.map((value) => Utils.convertRange(value, [0, 255], [0, 1]))
                 });
                 twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, this.lfCameraBufferInfo);
                 twgl.drawBufferInfo(this.gl, this.lfCameraBufferInfo, this.gl.LINES);
             };
+
+            /** Draw to the picking texture */
             this.gl.useProgram(this.secondaryProgramInfo.program);
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pickingFrameBuffer);
+            this.lightField.iterateCameras(lfCameraRenderCallback);
+            if (this.mouseX !== null && this.mouseY !== null) {
+                this.handlePicking();
+            }
+
+            /** Draw to the canvas */
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
             this.lightField.iterateCameras(lfCameraRenderCallback);
             this.gl.useProgram(this.mainProgramInfo.program);
         }
@@ -596,6 +654,34 @@ export default class Renderer
 
 
     /**
+     * Takes care of selecting light field camera by simply clicking on it
+     */
+    handlePicking()
+    {
+        const pixelX = this.mouseX * this.gl.canvas.width / this.gl.canvas.clientWidth;
+        const pixelY = this.gl.canvas.height - this.mouseY * this.gl.canvas.height / this.gl.canvas.clientHeight - 1;
+        const data = new Uint8Array(4);
+        this.gl.readPixels(
+            pixelX,
+            pixelY,
+            1,
+            1,
+            this.gl.RGBA,
+            this.gl.UNSIGNED_BYTE,
+            data
+        );
+
+        /** Iterate over cameras and check, if selected camera should be changed */
+        this.lightField.iterateCameras((camera, row, column) => {
+            if (Utils.arrayEquals(data, camera.color)) {
+                this.lightField.setSelectedCamera(row, column);
+                this.inputs.selects.lightField.cameraSelection.value = row + "_" + column;
+            }
+        });
+    }
+
+
+    /**
      * Iterates over all light field cameras, generates canvas screenshots, zips them and saves them on client side
      */
     async exportLightField()
@@ -615,8 +701,6 @@ export default class Renderer
             this.prepareGl(false);
             twgl.resizeCanvasToDisplaySize(this.gl.canvas);
             this.gl.viewport(0, 0, this.canvas.width, this.gl.canvas.height);
-
-            this.mesh.move();
             this.renderCameraView(camera, this.canvas.clientHeight);
 
             /** Return a promise which saves the screenshot */
@@ -637,7 +721,6 @@ export default class Renderer
                 this.canvas.style.height = initialHeight;
                 this.canvas.style.width = initialWidth;
                 document.getElementById("mainCanvasWrapper").appendChild(this.canvas);
-                this.render();
             });
     }
 
@@ -719,7 +802,7 @@ export default class Renderer
                                 /** It's a power of 2, generate mips */
                                 this.gl.generateMipmap(this.gl.TEXTURE_2D);
                             } else {
-                                /** It's not a power of 2, turn of mips and set wrapping to clamp to edge */
+                                /** It's not a power of 2, turn off mips and set wrapping to clamp to edge */
                                 this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
                                 this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
                                 this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
@@ -750,7 +833,6 @@ export default class Renderer
                 sliderObject.slider.value = this.mesh[sliderName];
                 sliderObject.sliderValue.innerHTML = this.mesh[sliderName].toFixed(1);
             }
-            this.render();
         }, (reason) => alert(reason));
     }
 }

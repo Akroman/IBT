@@ -131,7 +131,7 @@ export default class Camera
      * @param {vec3} up
      * @returns {Camera}
      */
-    lookAt(target, up = this.up)
+    lookAt(target = this.direction, up = this.up)
     {
         mat4.lookAt(this._matrix, this.position, target, up);
         return this;
