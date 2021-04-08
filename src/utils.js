@@ -48,9 +48,36 @@ export default class Utils
     }
 
 
+    /**
+     * Checks if all items in two arrays are equal
+     * @param {[]} firstArray
+     * @param {[]} secondArray
+     * @return {boolean}
+     */
     static arrayEquals(firstArray, secondArray)
     {
         return firstArray.length === secondArray.length
             && firstArray.every((val, index) => val === secondArray[index]);
+    }
+
+
+    /**
+     * Creates pair of light field progress bar container and light field progress bar
+     * @return {[HTMLDivElement]}
+     */
+    static createLightFieldProgressBar()
+    {
+        const progressBarContainer = document.createElement("div")
+        progressBarContainer.className = "progress";
+        progressBarContainer.id = "lightFieldProgressBarContainer";
+
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress-bar bg-secondary";
+        progressBar.id = "lightFieldProgressBar";
+        progressBar.style.width = "0";
+
+        progressBarContainer.appendChild(progressBar);
+        document.getElementById("lightFieldProgressContainer").appendChild(progressBarContainer);
+        return [progressBarContainer, progressBar];
     }
 }

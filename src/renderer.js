@@ -1,4 +1,4 @@
-import {glMatrix, mat4, vec3} from "gl-matrix";
+import {glMatrix, vec3} from "gl-matrix";
 import * as twgl from "twgl.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -139,7 +139,7 @@ export default class Renderer
 
 
     /**
-     * Initiates inputs to handle value changes (display values and re-render scene)
+     * Initializes inputs to handle value changes (display values and re-render scene)
      * Creates event listener for parsing .obj file on upload
      * @returns {Renderer}
      */
@@ -443,20 +443,54 @@ export default class Renderer
 
 
     /**
-     * Disables or enables all inputs
+     * Disables or enables inputs
+     * If inputs param is supplied, applies toggle to these inputs only, otherwise on all inputs
      * @param {boolean} toggle
+     * @param {[HTMLInputElement]} inputsToToggle
      */
-    toggleInputs(toggle)
+    toggleInputs(toggle, inputsToToggle = [])
     {
+        if (inputsToToggle.length) {
+            for (let i = 0; i < inputsToToggle.length; i++) {
+                inputsToToggle[i].disabled = toggle;
+            }
+        } else {
+            const inputs = document.getElementsByTagName("input");
+            for (let i = 0; i < inputs.length; i++) {
+                inputs[i].disabled = toggle;
+            }
+
+            const selects = document.getElementsByTagName("select");
+            for (let i = 0; i < selects.length; i++) {
+                selects[i].disabled = toggle;
+            }
+        }
+    }
+
+
+    /**
+     * Gets inputs and selectboxes that are currently disabled
+     * @return {[HTMLInputElement]}
+     */
+    getDisabledInputs()
+    {
+        const disabledInputs = [];
+
         const inputs = document.getElementsByTagName("input");
         for (let i = 0; i < inputs.length; i++) {
-            inputs[i].disabled = toggle;
+            if (inputs[i].disabled) {
+                disabledInputs.push(inputs[i]);
+            }
         }
 
         const selects = document.getElementsByTagName("select");
         for (let i = 0; i < selects.length; i++) {
-            selects[i].disabled = toggle;
+            if (selects[i].disabled) {
+                disabledInputs.push(selects[i]);
+            }
         }
+
+        return disabledInputs;
     }
 
 
@@ -604,10 +638,7 @@ export default class Renderer
         if (!(camera instanceof LightFieldCamera)) {
             camera.lookAt();
 
-            /**
-             * Iterate over cameras and draw them with the simple shaders
-             * @param {LightFieldCamera} lfCamera
-             */
+            /** Iterate over cameras and draw them with the simple shaders */
             const lfCameraRenderCallback = (lfCamera) => {
                 twgl.setUniforms(this.secondaryProgramInfo, {
                     u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix),
@@ -687,13 +718,23 @@ export default class Renderer
     async exportLightField()
     {
         const zipper = new JSZip();
-        let fileNumber = 1;
-        /** Create a new canvas that the light field will be rendered to, disable all inputs */
+        /** Move canvas and set its height and width */
         const initialWidth = this.canvas.style.width;
         const initialHeight = this.canvas.style.height;
         this.canvas.style.width = (parseInt(this.inputs.numbers.lightField.resolutionWidth.value) + 6) + "px";
         this.canvas.style.height = (parseInt(this.inputs.numbers.lightField.resolutionHeight.value) + 6) + "px";
         document.getElementById("lfCanvasWrapper").appendChild(this.canvas);
+        window.scrollTo(0, 0);
+
+        /** Create progress bar */
+        const progressBarCaption = document.getElementById("lightFieldProgressBarCaption");
+        const [progressBarContainer, progressBar] = Utils.createLightFieldProgressBar();
+        const numberOfFiles = this.lightField.verticalCamerasCount * this.lightField.horizontalCamerasCount;
+        let fileNumber = 0;
+        progressBarCaption.innerHTML = "Vytváření light fieldu...";
+
+        /** Disable all inputs */
+        const disabledInputs = this.getDisabledInputs();
         this.toggleInputs(true);
 
         /** Light field cameras need to be iterated asynchronously because JSZip zips files asynchronously */
@@ -703,21 +744,33 @@ export default class Renderer
             this.gl.viewport(0, 0, this.canvas.width, this.gl.canvas.height);
             this.renderCameraView(camera, this.canvas.clientHeight);
 
-            /** Return a promise which saves the screenshot */
+            /** Return a promise which saves the screenshot and moves the progress bar */
             return new Promise((resolve) => {
                 this.canvas.toBlob((blob) => {
                     zipper.file("IMG_" + fileNumber + ".png", blob, {base64: true});
                     fileNumber++;
+
+                    const progress = ((fileNumber / numberOfFiles) * 100).toFixed(0) + "%";
+                    progressBar.style.width = progress;
+                    progressBar.innerHTML = progress;
                     resolve();
                 });
             });
         });
 
-        /** Save the zipped screenshots, enable inputs, remove the light field canvas and re-render scene */
+        progressBarCaption.innerHTML = "Ukládání light fieldu...";
+        /** Save the zipped screenshots, enable inputs, move the light field canvas, remove progress bar */
         zipper.generateAsync({type: "blob"})
             .then((content) => {
                 saveAs(content, "light_field.zip");
+
+                progressBar.remove();
+                progressBarContainer.remove();
+                progressBarCaption.innerHTML = "";
+
                 this.toggleInputs(false);
+                this.toggleInputs(true, disabledInputs);
+
                 this.canvas.style.height = initialHeight;
                 this.canvas.style.width = initialWidth;
                 document.getElementById("mainCanvasWrapper").appendChild(this.canvas);

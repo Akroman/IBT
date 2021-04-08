@@ -100,8 +100,17 @@ export default class LightField
 
 
     /**
+     * Callback type for iterating cameras
+     * @callback iterateCamerasCallback
+     * @param {LightFieldCamera} camera
+     * @param {number} row
+     * @param {number} column
+     * @param {number} iterator
+     */
+
+    /**
      * Iterates over all light field cameras and passes them to the given callback
-     * @param {function} callback
+     * @param {iterateCamerasCallback} callback
      */
     iterateCameras(callback)
     {
@@ -116,8 +125,16 @@ export default class LightField
 
 
     /**
+     * Callback type for asynchronously iterating cameras
+     * @callback asyncIterateCamerasCallback
+     * @param {LightFieldCamera} camera
+     * @param {number} row
+     * @param {number} column
+     */
+
+    /**
      * Asynchronous version of iterateCameras
-     * @param callback
+     * @param {asyncIterateCamerasCallback} callback
      * @returns {Promise<void>}
      */
     async iterateCamerasAsync(callback)
@@ -162,13 +179,7 @@ export default class LightField
     #updateCameraColors()
     {
         const cameraColor = [0, 0, 0, 255];
-        /**
-         * @param {LightFieldCamera} camera
-         * @param {number} row
-         * @param {number} column
-         * @param {number} iterator
-         */
-        const cameraCallback = (camera, row, column, iterator) => {
+        this.iterateCameras((camera, row, column, iterator) => {
             if (camera.selected) {
                 camera.color = LightFieldCamera.SELECTED_COLOR;
             } else {
@@ -181,8 +192,7 @@ export default class LightField
                 }
                 camera.color = [...cameraColor];
             }
-        };
-        this.iterateCameras(cameraCallback);
+        });
     }
 
 
