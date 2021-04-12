@@ -1,22 +1,14 @@
 import LightFieldCamera from "./lightFieldCamera";
 import {vec3} from "gl-matrix";
+import SceneObject from "./sceneObject";
 import Utils from "./utils";
 
 
 /**
  * Class representing light field, contains 2D array of light field cameras
  */
-export default class LightField
+export default class LightField extends SceneObject
 {
-    /** @type {number} */
-    #posX;
-
-    /** @type {number} */
-    #posY;
-
-    /** @type {number} */
-    #posZ;
-
     /** @type {number} */
     horizontalCamerasCount;
 
@@ -29,33 +21,28 @@ export default class LightField
     /** @type {number} */
     verticalCameraSpace;
 
+    /** @type {[number]} */
+    cameraBackgroundColor;
+
     /** @type {[]} */
     #cameraArray;
 
 
     /**
-     * Initializes light field with default values
      * @param {number} positionX
      * @param {number} positionY
      * @param {number} positionZ
      */
     constructor(positionX, positionY, positionZ)
     {
-        this.#posX = positionX;
-        this.#posY = positionY;
-        this.#posZ = positionZ;
+        super(positionX, positionY, positionZ);
         this.horizontalCamerasCount = 8;
         this.verticalCamerasCount = 8;
-        this.horizontalCameraSpace = 1.5;
-        this.verticalCameraSpace = 1.5;
+        this.horizontalCameraSpace = 0.7;
+        this.verticalCameraSpace = 0.7;
+        this.cameraBackgroundColor = [255, 255, 255];
         this.#cameraArray = [];
     }
-
-
-    /**
-     * @returns {vec3}
-     */
-    get position() { return vec3.fromValues(this.#posX, this.#posY, this.#posZ); }
 
 
     /**
@@ -73,9 +60,9 @@ export default class LightField
         this.horizontalCamerasCount = horizontalCamerasCount;
         this.verticalCamerasCount = verticalCamerasCount;
 
-        const zPosition = this.#posZ;
-        let yPosition = this.#posY;
-        let xPosition = this.#posX;
+        const zPosition = this.posZ;
+        let yPosition = this.posY;
+        let xPosition = this.posX;
         const lightFieldCameraPosition = vec3.fromValues(xPosition, yPosition, zPosition);
 
         /** Iterate over given number of rows and columns and create light field cameras */
@@ -86,7 +73,7 @@ export default class LightField
                 xPosition += this.horizontalCameraSpace;
                 vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
             }
-            xPosition = this.#posX;
+            xPosition = this.posX;
             yPosition -= this.verticalCameraSpace;
             vec3.set(lightFieldCameraPosition, xPosition, yPosition, zPosition);
         }
@@ -128,8 +115,6 @@ export default class LightField
      * Callback type for asynchronously iterating cameras
      * @callback asyncIterateCamerasCallback
      * @param {LightFieldCamera} camera
-     * @param {number} row
-     * @param {number} column
      */
 
     /**
@@ -141,7 +126,7 @@ export default class LightField
     {
         for (let row = 0; row < this.verticalCamerasCount; row++) {
             for (let column = 0; column < this.horizontalCamerasCount; column++) {
-                await callback(this.getCamera(row, column), row, column);
+                await callback(this.getCamera(row, column));
             }
         }
     }
@@ -175,7 +160,9 @@ export default class LightField
     }
 
 
-
+    /**
+     * Updates colors of cameras
+     */
     #updateCameraColors()
     {
         const cameraColor = [0, 0, 0, 255];
@@ -217,13 +204,24 @@ export default class LightField
      */
     get selectedCameraIndex()
     {
-        let index = [];
+        const index = [];
         this.iterateCameras((camera, row, column) => {
             if (camera.selected) {
                 index.push(row, column);
             }
         });
         return index;
+    }
+
+
+    /**
+     * Returns background color scaled to values for WebGL
+     * @return {[number]}
+     */
+    get scaledBackgroundColor()
+    {
+        return this.cameraBackgroundColor
+            .map((value) => Utils.convertRange(value, [0, 255], [0, 1]));
     }
 }
 

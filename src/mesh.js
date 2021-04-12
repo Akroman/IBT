@@ -1,21 +1,13 @@
 import * as twgl from "twgl.js";
 import {glMatrix, mat4, vec2, vec3} from "gl-matrix";
+import SceneObject from "./sceneObject";
 
 
 /**
  * Class representing parsed object from objParser
  */
-export default class Mesh
+export default class Mesh extends SceneObject
 {
-    /** @type {number} */
-    posX = 0;
-
-    /** @type {number} */
-    posY = 0;
-
-    /** @type {number} */
-    posZ = 0;
-
     /** @type {number} */
     rotX = 0;
 
@@ -25,14 +17,13 @@ export default class Mesh
     /** @type {number} */
     rotZ = 0;
 
+    matScale = 1;
+
     /** @type {[Object]} */
     #geometries;
 
     /** @type {Object} */
     #materials
-
-    /** @type {mat4} */
-    matrix;
 
 
 
@@ -43,24 +34,12 @@ export default class Mesh
      */
     constructor(geometries, materialLibs, materials)
     {
+        super(0, 0, 0);
         this.#geometries = geometries;
         this.#materials = materials;
         this.materialLibs = materialLibs;
-        this.matrix = mat4.create();
         this.center();
     }
-
-
-    /**
-     * @returns {vec3}
-     */
-    get position() { return vec3.fromValues(this.posX, this.posY, this.posZ); }
-
-
-    /**
-     * @param {vec3} position
-     */
-    set position(position) { [this.posX, this.posY, this.posZ] = position; }
 
 
     /**
@@ -100,6 +79,17 @@ export default class Mesh
 
 
     /**
+     * Scales the mesh matrix
+     * @return {Mesh}
+     */
+    scale()
+    {
+        mat4.scale(this.matrix, this.matrix, vec3.fromValues(this.matScale, this.matScale, this.matScale));
+        return this;
+    }
+
+
+    /**
      * Moves mesh to the given position
      * @param {vec3} position
      * @return {Mesh}
@@ -107,7 +97,6 @@ export default class Mesh
     move(position = this.position)
     {
         this.position = position;
-        this.matrix = mat4.create();
         mat4.translate(this.matrix, this.matrix, position);
         return this;
     }
@@ -121,6 +110,7 @@ export default class Mesh
         mat4.rotateX(this.matrix, this.matrix, glMatrix.toRadian(this.rotX));
         mat4.rotateY(this.matrix, this.matrix, glMatrix.toRadian(this.rotY));
         mat4.rotateZ(this.matrix, this.matrix, glMatrix.toRadian(this.rotZ));
+        return this;
     }
 
 

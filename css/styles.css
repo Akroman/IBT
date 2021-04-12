@@ -45,6 +45,15 @@
     color: white;
 }
 
+.sideBarSectionCaption {
+    margin-top: 20px;
+    padding-left: 20px;
+}
+
+.numberWrapper {
+    margin-top: 10px;
+}
+
 
 /* Slider styling */
 .slidecontainer {

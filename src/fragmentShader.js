@@ -44,10 +44,10 @@ export const fragmentShader = `
             specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
         }
         vec4 specularMapColor = texture2D(u_specularMap, v_texcoord);
-        vec3 effectiveSpecular = u_specular * specularMapColor.rgb;
+        vec3 effectiveSpecular = u_specular * specularMapColor.rgb * u_lightColor;
         
         vec4 diffuseMapColor = texture2D(u_diffuseMap, v_texcoord);
-        vec3 effectiveDiffuse = u_diffuse * diffuseMapColor.rgb * v_color.rgb;
+        vec3 effectiveDiffuse = u_diffuse * diffuseMapColor.rgb * v_color.rgb * u_lightColor;
         float effectiveOpacity = u_opacity * diffuseMapColor.a * v_color.a;
 
         gl_FragColor = vec4(

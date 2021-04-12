@@ -1,6 +1,7 @@
 import {glMatrix, vec3} from "gl-matrix";
 import * as twgl from "twgl.js";
 import JSZip from "jszip";
+import TgaLoader from "tga-js";
 import FileSaver from "file-saver";
 import {fragmentShader, simpleFragmentShader} from "./fragmentShader.js";
 import {vertexShader, simpleVertexShader} from "./vertexShader.js";
@@ -10,8 +11,8 @@ import LightSource from "./lightSource";
 import Utils from "./utils";
 import LightField from "./lightField";
 import LightFieldCamera from "./lightFieldCamera";
-import chairObj from '../examples/chair.obj';
-import chairMtl from '../examples/chair.mtl';
+import chairObj from '../examples/Chair/chair.obj';
+import chairMtl from '../examples/Chair/chair.mtl';
 
 
 /**
@@ -70,6 +71,9 @@ export default class Renderer
     /** @type {?number} */
     mouseY = null;
 
+    /** @type {number} */
+    animationId;
+
 
 
     /**
@@ -84,11 +88,11 @@ export default class Renderer
         this.objParser = new ObjParser(this.gl);
         this.camera = new Camera(0, 0, 30);
         this.light = new LightSource(0, 0, 30);
-        this.lightField = new LightField(-5, 5, 15);
+        this.lightField = new LightField(-2, 2, 15);
 
         this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
         this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
-        this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.5);
+        this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.25);
     }
 
 
@@ -153,13 +157,6 @@ export default class Renderer
             this.camera.position = vec3.fromValues(0, 0, 30);
             this.camera.pitch = 0;
             this.camera.yaw = -90;
-        };
-        document.getElementById("cameraLookAt").onclick = () => {
-            const meshDirection = vec3.create();
-            vec3.subtract(meshDirection, this.mesh.position, this.mesh.centerOffset);
-            this.camera.lookAt(meshDirection);
-            this.camera.pitch = Math.asin(-this.camera._matrix[11]);
-            this.camera.yaw = Math.atan2(this.camera._matrix[7], this.camera._matrix[15]);
         };
 
         this.canvas.addEventListener("mousedown", (event) => {
@@ -229,6 +226,10 @@ export default class Renderer
                         slider: document.getElementById("meshZPos"),
                         sliderValue: document.getElementById("meshZPosOut")
                     },
+                    matScale: {
+                        slider: document.getElementById("meshScale"),
+                        sliderValue: document.getElementById("meshScaleOut")
+                    },
                     rotX: {
                         slider: document.getElementById("meshXRot"),
                         sliderValue: document.getElementById("meshXRotOut")
@@ -245,12 +246,6 @@ export default class Renderer
             },
 
             numbers: {
-                light: {
-                    colorRed: document.getElementById("lightRedColor"),
-                    colorGreen: document.getElementById("lightGreenColor"),
-                    colorBlue: document.getElementById("lightBlueColor")
-                },
-
                 lightField: {
                     horizontalCamerasCount: document.getElementById("lfHorCamNumber"),
                     verticalCamerasCount: document.getElementById("lfVertCamNumber"),
@@ -277,6 +272,16 @@ export default class Renderer
                 }
             },
 
+            colors: {
+                light: {
+                    color: document.getElementById("lightColor")
+                },
+
+                lightField: {
+                    cameraBackgroundColor: document.getElementById("lfBackgroundColor")
+                }
+            },
+
             keys: {}
         }
 
@@ -293,6 +298,9 @@ export default class Renderer
                             break;
                         case "selects":
                             this.initSelect(inputName, sceneObjectName, input);
+                            break;
+                        case "colors":
+                            this.initColor(inputName, sceneObjectName, input);
                             break;
                         default:
                             break;
@@ -313,19 +321,24 @@ export default class Renderer
     initNumber(numberName, sceneObjectName, input)
     {
         const renderer = this;
-        /** Light colors need to be converted to correct format */
-        if (sceneObjectName === "light") {
-            input.value = Utils.convertRange(this.light[numberName], [0, 1], [0, 255]);
-            input.oninput = function () {
-                renderer.light[numberName] = Utils.convertRange(parseInt(this.value), [0, 255], [0, 1]);
-            };
-        } else if (sceneObjectName === "lightField") {
+        if (sceneObjectName === "lightField") {
             if (!numberName.startsWith("resolution")) {
                 input.value = this.lightField[numberName];
                 this.lightField.initCameras();
                 input.oninput = function () {
+                    const value = parseFloat(this.value);
                     if (numberName.endsWith("Space")) {
-                        renderer.lightField[numberName] = parseFloat(this.value);
+                        if (value < 0.5) {
+                            alert("Mezera mezi kamerami musí být kladné číslo");
+                            this.value = 0;
+                        } else {
+                            renderer.lightField[numberName] = value;
+                        }
+                    } else if (numberName.endsWith("Count")) {
+                        if (value < 1 || value > 16) {
+                            alert("Počet kamer musí být v rozsahu 1 až 16");
+                            this.value = (value < 1 ? 1 : 16).toString();
+                        }
                     }
                     renderer.lightField.initCameras(
                         parseInt(renderer.inputs.numbers.lightField.horizontalCamerasCount.value),
@@ -388,6 +401,22 @@ export default class Renderer
             const value = parseFloat(this.value);
             input.sliderValue.innerHTML = value;
             renderer[sceneObjectName][sliderName] = value;
+        };
+    }
+
+
+    /**
+     * Initializes colors to handle changes and re-render scene
+     * @param {string} colorName
+     * @param {string} sceneObjectName
+     * @param {Object} input
+     */
+    initColor(colorName, sceneObjectName, input)
+    {
+        const renderer = this;
+        input.value = Utils.rgbToHex(...this[sceneObjectName][colorName]);
+        input.oninput = function () {
+            renderer[sceneObjectName][colorName] = Utils.hexToRgb(this.value);
         };
     }
 
@@ -495,13 +524,12 @@ export default class Renderer
 
 
     /**
-     * Inits necessary variables and stuff around WebGL (resizing, culling, etc.), sets background color
+     * Inits enables depth test and scissor test based on supplied parameter
      * @param {boolean} enableScissor
      */
     prepareGl(enableScissor = true)
     {
         this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.enable(this.gl.CULL_FACE);
         if (enableScissor) {
             this.gl.enable(this.gl.SCISSOR_TEST);
         } else {
@@ -557,14 +585,14 @@ export default class Renderer
         /** On the lower half of canvas draw view from selected light field camera */
         this.gl.viewport(0, 0, width, halfHeight);
         this.gl.scissor(0, 0, width, halfHeight);
-        this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        this.gl.clearColor(...this.lightField.scaledBackgroundColor, 1.0);
 
         /** Proceed to draw only if user has selected a camera */
         const lfCamera = this.lightField.selectedCamera;
         if (lfCamera) {
             this.renderCameraView(lfCamera, effectiveHeight);
         }
-        requestAnimationFrame((timestamp) => this.render());
+        this.animationId = requestAnimationFrame((timestamp) => this.render());
     }
 
 
@@ -573,7 +601,7 @@ export default class Renderer
      */
     handleKeyboardInputs()
     {
-        const cameraSpeed = 0.5;
+        const cameraSpeed = 0.4;
         const helperVector = vec3.create();
         const cameraFrontScaled = vec3.create();
         const cameraFrontCrossNormScaled = vec3.create();
@@ -625,14 +653,18 @@ export default class Renderer
                 break;
         }
 
-        this.mesh.move().rotate();
+        this.mesh.createMatrix()
+            .move()
+            .rotate()
+            .scale();
+
+        /** Matrix logic around camera */
         const fieldOfView = glMatrix.toRadian(60),
             aspect = this.gl.canvas.clientWidth / height,
             zNear = 1,
             zFar = 5000;
-
-        /** Matrix logic around camera */
-        camera.setPerspective(fieldOfView, aspect, zNear, zFar)
+        camera.createMatrix()
+            .setPerspective(fieldOfView, aspect, zNear, zFar)
             .move();
         /** We need to make camera look in its direction and draw the light field representation */
         if (!(camera instanceof LightFieldCamera)) {
@@ -668,7 +700,7 @@ export default class Renderer
             u_worldInverseTranspose: this.mesh.inverseTransposeMatrix,
             u_viewWorldPosition: camera.position,
             u_lightWorldPosition: lightPosition,
-            u_lightColor: this.light.color
+            u_lightColor: this.light.scaledColor
         };
         twgl.setUniforms(this.mainProgramInfo, sharedUniforms);
 
@@ -718,6 +750,7 @@ export default class Renderer
     async exportLightField()
     {
         const zipper = new JSZip();
+        cancelAnimationFrame(this.animationId);
         /** Move canvas and set its height and width */
         const initialWidth = this.canvas.style.width;
         const initialHeight = this.canvas.style.height;
@@ -742,6 +775,7 @@ export default class Renderer
             this.prepareGl(false);
             twgl.resizeCanvasToDisplaySize(this.gl.canvas);
             this.gl.viewport(0, 0, this.canvas.width, this.gl.canvas.height);
+            this.gl.clearColor(...this.lightField.scaledBackgroundColor, 1.0);
             this.renderCameraView(camera, this.canvas.clientHeight);
 
             /** Return a promise which saves the screenshot and moves the progress bar */
@@ -774,6 +808,7 @@ export default class Renderer
                 this.canvas.style.height = initialHeight;
                 this.canvas.style.width = initialWidth;
                 document.getElementById("mainCanvasWrapper").appendChild(this.canvas);
+                this.animationId = requestAnimationFrame((timestamp) => this.render());
             });
     }
 
@@ -824,6 +859,7 @@ export default class Renderer
                  * Just save textures for further use when rendering
                  */
                 case "jpg":
+                case "jpeg":
                 case "png":
                 case "gif":
                 case "bmp":
@@ -864,9 +900,19 @@ export default class Renderer
                         };
 
                         const fileReader = new FileReader();
-                        fileReader.onload = (ev) => image.src = ev.target.result;
                         fileReader.onerror = (ev) => reject(ev.target.result);
-                        fileReader.readAsDataURL(file);
+                        /** Tga textures need to be loaded with TgaLoader */
+                        if (fileType === "tga") {
+                            const tgaLoader = new TgaLoader();
+                            fileReader.onload = (ev) => {
+                                tgaLoader.load(new Uint8Array(ev.target.result));
+                                image.src = tgaLoader.getDataURL("image/png");
+                            };
+                            fileReader.readAsArrayBuffer(file);
+                        } else {
+                            fileReader.onload = (ev) => image.src = ev.target.result;
+                            fileReader.readAsDataURL(file);
+                        }
                     }));
                     break;
                 default:

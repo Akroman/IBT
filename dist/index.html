@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WebGL</title>
+    <title>Light field renderer</title>
 </head>
 <body>
     <div id="lightFieldProgressContainer">
@@ -28,30 +28,42 @@
                 </div>
             </div>
 
-            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+            <div class="row sideBarSectionCaption">
                 <h5>Kamera</h5>
             </div>
 
             <div class="sideBarSection">
+                <div class="row">
+                    Ovládání
+                </div>
+
+                <div class="row" style="margin: 10px 0">
+                    <input value="W" style="margin: auto;" disabled class="btn btn-secondary" type="button">
+                </div>
+
+                <div class="row" style="margin: 10px 0; display: flex; justify-content: center;">
+                    <input value="A" style="margin: 0 5px" disabled class="btn btn-secondary" type="button">
+                    <input value="S" style="margin: 0 5px" disabled class="btn btn-secondary" type="button">
+                    <input value="D" style="margin: 0 5px" disabled class="btn btn-secondary" type="button">
+                </div>
+
+                <div class="row">
+                    Možnosti
+                </div>
+
                 <div class="row" style="margin: 10px 0">
                     <div class="col-12">
                         <input value="Resetovat pozici" class="btn btn-secondary" type="button" id="resetCamera">
                     </div>
                 </div>
-
-                <div class="row" style="margin: 10px 0">
-                    <div class="col-12">
-                        <input value="Zaměřit na objekt" class="btn btn-secondary" type="button" id="cameraLookAt">
-                    </div>
-                </div>
             </div>
 
-            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+            <div class="row sideBarSectionCaption">
                 <h5>Světlo</h5>
             </div>
 
             <div class="sideBarSection">
-                <div class="row" style="margin-top: 20px">
+                <div class="row">
                     Pozice
                 </div>
 
@@ -62,7 +74,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightXPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="lightXPos">
                     </div>
                     <div class="col-2">
                         <label id="lightXPosOut"></label>
@@ -76,7 +88,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightYPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="lightYPos">
                     </div>
                     <div class="col-2">
                         <label id="lightYPosOut"></label>
@@ -90,7 +102,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="lightZPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="lightZPos">
                     </div>
                     <div class="col-2">
                         <label id="lightZPosOut"></label>
@@ -104,7 +116,7 @@
                         </label>
                     </div>
                     <div class="col-9">
-                        <select id="lightPositionOptions">
+                        <select id="lightPositionOptions" style="width: 100%">
                             <option value="stickCamera" selected="selected">Přichytit ke kameře</option>
                             <option value="stickLightField">Přichytit k light fieldu</option>
                             <option value="free">Volný pohyb</option>
@@ -112,47 +124,25 @@
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 20px">
-                    Barva
-                </div>
-
-                <div class="row" style="margin-top: 20px">
-                    <div class="col-1">
-                        <label for="lightRedColor">
-                            R
+                <div class="row numberWrapper">
+                    <div class="col-5">
+                        <label for="lightColor">
+                            Barva
                         </label>
                     </div>
-                    <div class="col-1" style="margin-right: 50px">
-                        <input type="number" min="0" max="255" value="255" id="lightRedColor">
-                    </div>
-
-                    <div class="col-1">
-                        <label for="lightGreenColor">
-                            G
-                        </label>
-                    </div>
-                    <div class="col-1" style="margin-right: 50px">
-                        <input type="number" min="0" max="255" value="255" id="lightGreenColor">
-                    </div>
-
-                    <div class="col-1">
-                        <label for="lightBlueColor">
-                            B
-                        </label>
-                    </div>
-                    <div class="col-1">
-                        <input type="number" min="0" max="255" value="255" id="lightBlueColor">
+                    <div class="col-7">
+                        <input type="color" id="lightColor" value="#ffffff" style="width: 100%">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="mainCanvasWrapper" class="col-6">
+        <div id="mainCanvasWrapper" class="col-5">
             <canvas id="mainCanvas" tabindex="0" style="outline: none"></canvas>
         </div>
 
         <div class="col sideBar">
-            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+            <div class="row sideBarSectionCaption">
                 <h5>Objekt</h5>
             </div>
 
@@ -168,7 +158,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshXPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="meshXPos">
                     </div>
                     <div class="col-2">
                         <label id="meshXPosOut"></label>
@@ -182,7 +172,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshYPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="meshYPos">
                     </div>
                     <div class="col-2">
                         <label id="meshYPosOut"></label>
@@ -196,10 +186,24 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-50" max="50" value="0" class="slider" id="meshZPos">
+                        <input type="range" step="0.1" min="-50" max="50" value="0" class="slider" id="meshZPos">
                     </div>
                     <div class="col-2">
                         <label id="meshZPosOut"></label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    Scale
+                </div>
+
+                <div class="row">
+                    <div class="col-1"></div>
+                    <div class="col-8 slidecontainer">
+                        <input type="range" step="0.1" min="0.1" max="4" value="1" class="slider" id="meshScale">
+                    </div>
+                    <div class="col-2">
+                        <label id="meshScaleOut"></label>
                     </div>
                 </div>
 
@@ -214,7 +218,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshXRot">
+                        <input type="range" step="0.1" min="-180" max="180" value="0" class="slider" id="meshXRot">
                     </div>
                     <div class="col-2">
                         <label id="meshXRotOut"></label>
@@ -228,7 +232,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshYRot">
+                        <input type="range" step="0.1" min="-180" max="180" value="0" class="slider" id="meshYRot">
                     </div>
                     <div class="col-2">
                         <label id="meshYRotOut"></label>
@@ -242,7 +246,7 @@
                         </label>
                     </div>
                     <div class="col-8 slidecontainer">
-                        <input type="range" step="0.5" min="-180" max="180" value="0" class="slider" id="meshZRot">
+                        <input type="range" step="0.1" min="-180" max="180" value="0" class="slider" id="meshZRot">
                     </div>
                     <div class="col-2">
                         <label id="meshZRotOut"></label>
@@ -250,7 +254,7 @@
                 </div>
             </div>
 
-            <div class="row" style="margin-top: 20px; padding-left: 20px;">
+            <div class="row sideBarSectionCaption">
                 <h5>Light field</h5>
             </div>
 
@@ -266,63 +270,73 @@
                         </label>
                     </div>
                     <div class="col-4">
-                        <input type="number" value="8" min="2" max="32" id="lfVertCamNumber">
+                        <input type="number" value="8" min="1" max="16" id="lfVertCamNumber" style="width: 100%">
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 10px">
+                <div class="row numberWrapper">
                     <div class="col-8">
                         <label for="lfHorCamNumber">
                             Počet sloupců
                         </label>
                     </div>
                     <div class="col-4">
-                        <input type="number" value="8" min="2" max="32" id="lfHorCamNumber">
+                        <input type="number" value="8" min="1" max="16" id="lfHorCamNumber" style="width: 100%">
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 10px">
+                <div class="row numberWrapper">
                     <div class="col-8">
                         <label for="lfHorCamSpace">
                             Horizontální mezera mezi kamerami
                         </label>
                     </div>
                     <div class="col-4">
-                        <input type="number" step="0.1" value="1.5" min="1" max="32" id="lfHorCamSpace">
+                        <input type="number" step="0.1" value="0.7" min="0.5" max="32" id="lfHorCamSpace" style="width: 100%">
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 10px">
+                <div class="row numberWrapper">
                     <div class="col-8">
                         <label for="lfVertCamSpace">
                             Vertikální mezera mezi kamerami
                         </label>
                     </div>
                     <div class="col-4">
-                        <input type="number" step="0.1" value="1.5" min="1" max="32" id="lfVertCamSpace">
+                        <input type="number" step="0.1" value="0.7" min="0.5" max="32" id="lfVertCamSpace" style="width: 100%">
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 10px">
+                <div class="row numberWrapper">
                     <div class="col-7">
                         <label for="lfCameraSelection">
                             Výběr pohledu kamery
                         </label>
                     </div>
                     <div class="col-5">
-                        <select id="lfCameraSelection"></select>
+                        <select id="lfCameraSelection" style="width: 100%"></select>
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: 10px">
-                    <div class="col-5">
+                <div class="row numberWrapper">
+                    <div class="col-3">
                         <label for="lfResolutionWidth">
                             Výsledné rozlišení
                         </label>
                     </div>
-                    <div class="col-7" style="display: flex; justify-content: space-between">
+                    <div class="col-9" style="display: flex; justify-content: space-between">
                         <input type="number" style="width: 40%; height: 30px;" value="1920" id="lfResolutionWidth"> X
                         <input value="1080" style="width: 40%; height: 30px;" type="number" id="lfResolutionHeight">
+                    </div>
+                </div>
+                <div class="row numberWrapper">
+                    <div class="col-5">
+                        <label for="lfBackgroundColor">
+                            Barva pozadí
+                        </label>
+                    </div>
+                    <div class="col-7">
+                        <input type="color" id="lfBackgroundColor" value="#ffffff" style="width: 100%">
                     </div>
                 </div>
             </div>
