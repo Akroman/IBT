@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import Mesh from "./mesh";
 import Utils from "./utils";
 
@@ -182,7 +187,9 @@ export default class ObjParser
                 this.#objNormals.push(data.map(parseFloat));
                 break;
             case 'vt':
-                this.#objTexcoords.push(data.map(parseFloat));
+                if (data.length === 2) {
+                    this.#objTexcoords.push(data.map(parseFloat));
+                }
                 break;
             case 'f':
                 this.#setGeometry();
@@ -236,13 +243,13 @@ export default class ObjParser
                 this.#materialObject.u_illum = parseInt(data[0]);
                 break;
             case 'map_Kd':
-                this.#materialObject.u_diffuseMap = unparsedArguments;
+                this.#materialObject.u_diffuseMap = data[data.length - 1];
                 break;
             case 'map_Ns':
-                this.#materialObject.u_specularMap = unparsedArguments;
+                this.#materialObject.u_specularMap = data[data.length - 1];
                 break;
             case 'mapBump':
-                this.#materialObject.u_normalMap = unparsedArguments;
+                this.#materialObject.u_normalMap = data[data.length - 1];
                 break;
             default:
                 break;

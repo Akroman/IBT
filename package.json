@@ -1,6 +1,7 @@
 {
-    "name": "IBT",
+    "name": "light-field-renderer",
     "version": "1.0.0",
+    "author": "Matěj Hlávka",
     "dependencies": {
         "@babel/runtime": "^7.13.10",
         "bootstrap": "^4.6.0",
@@ -28,6 +29,7 @@
         "webpack-cli": "^4.6.0"
     },
     "scripts": {
-        "build": "webpack"
+        "build": "webpack",
+        "start": "light-server -s ./dist"
     }
 }

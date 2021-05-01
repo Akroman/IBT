@@ -1,4 +1,5 @@
 /**
+ * @author Matěj Hlávka
  * Class containing various static helper methods
  */
 export default class Utils

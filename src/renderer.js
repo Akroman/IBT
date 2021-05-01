@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import {glMatrix, vec3} from "gl-matrix";
 import * as twgl from "twgl.js";
 import JSZip from "jszip";
@@ -11,8 +16,8 @@ import LightSource from "./lightSource";
 import Utils from "./utils";
 import LightField from "./lightField";
 import LightFieldCamera from "./lightFieldCamera";
-import chairObj from '../examples/Chair/chair.obj';
-import chairMtl from '../examples/Chair/chair.mtl';
+import Mesh from "./mesh";
+import cubeObj from '../examples/Cube/cube.obj';
 
 
 /**
@@ -86,13 +91,14 @@ export default class Renderer
         this.initPickingFrameBuffer();
 
         this.objParser = new ObjParser(this.gl);
-        this.camera = new Camera(0, 0, 30);
-        this.light = new LightSource(0, 0, 30);
-        this.lightField = new LightField(-2, 2, 15);
+        this.camera = new Camera(...Camera.defaultPosition);
+        this.light = new LightSource(...LightSource.defaultPosition);
+        this.lightField = new LightField(...LightField.defaultPosition);
 
-        this.mesh = this.objParser.parseObj(chairObj + "\n" + chairMtl);
+        this.mesh = this.objParser.parseObj(cubeObj);
         this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
-        this.lfCameraBufferInfo = LightFieldCamera.getBufferInfo(this.gl, 0.25);
+        this.lfCameraBufferInfo = LightFieldCamera.getCameraBufferInfo(this.gl, 0.25);
+        this.lfCameraTargetBufferInfo = LightFieldCamera.getTargetBufferInfo(this.gl, 0.13);
     }
 
 
@@ -154,9 +160,9 @@ export default class Renderer
         document.getElementById("exportLf").onclick = () => this.exportLightField();
 
         document.getElementById("resetCamera").onclick = () => {
-            this.camera.position = vec3.fromValues(0, 0, 30);
-            this.camera.pitch = 0;
-            this.camera.yaw = -90;
+            this.camera.position = vec3.fromValues(...Camera.defaultPosition);
+            this.camera.pitch = Camera.defaultPitch;
+            this.camera.yaw = Camera.defaultYaw;
         };
 
         this.canvas.addEventListener("mousedown", (event) => {
@@ -328,16 +334,19 @@ export default class Renderer
                 input.oninput = function () {
                     const value = parseFloat(this.value);
                     if (numberName.endsWith("Space")) {
-                        if (value < 0.5) {
-                            alert("Mezera mezi kamerami musí být kladné číslo");
-                            this.value = 0;
+                        if (value < LightField.minCameraSpace) {
+                            alert("Mezera mezi kamerami musí být alespoň " + LightField.minCameraSpace.toString());
+                            this.value = LightField.minCameraSpace;
                         } else {
                             renderer.lightField[numberName] = value;
                         }
                     } else if (numberName.endsWith("Count")) {
-                        if (value < 1 || value > 16) {
-                            alert("Počet kamer musí být v rozsahu 1 až 16");
-                            this.value = (value < 1 ? 1 : 16).toString();
+                        if (value < LightField.minCameras || value > LightField.maxCameras) {
+                            alert("Počet kamer musí být v rozsahu " + LightField.minCameras.toString()
+                                + " až " + LightField.maxCameras.toString());
+                            this.value = (
+                                value < LightField.minCameras ? LightField.minCameras : LightField.maxCameras
+                            ).toString();
                         }
                     }
                     renderer.lightField.initCameras(
@@ -399,7 +408,7 @@ export default class Renderer
         input.sliderValue.innerHTML = this[sceneObjectName][sliderName].toFixed(1);
         input.slider.oninput = function () {
             const value = parseFloat(this.value);
-            input.sliderValue.innerHTML = value;
+            input.sliderValue.innerHTML = value.toFixed(1);
             renderer[sceneObjectName][sliderName] = value;
         };
     }
@@ -678,6 +687,16 @@ export default class Renderer
                 });
                 twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, this.lfCameraBufferInfo);
                 twgl.drawBufferInfo(this.gl, this.lfCameraBufferInfo, this.gl.LINES);
+
+                /** Move the target to the center of the camera model */
+                const targetOffset = 0.5;
+                lfCamera.move(vec3.fromValues(lfCamera.posX, lfCamera.posY, lfCamera.posZ + targetOffset));
+                twgl.setUniforms(this.secondaryProgramInfo, {
+                    u_worldViewProjection: this.camera.getWorldViewProjectionMatrix(lfCamera.positionMatrix)
+                });
+                twgl.setBuffersAndAttributes(this.gl, this.secondaryProgramInfo, this.lfCameraTargetBufferInfo);
+                twgl.drawBufferInfo(this.gl, this.lfCameraTargetBufferInfo);
+                lfCamera.move(vec3.fromValues(lfCamera.posX, lfCamera.posY, lfCamera.posZ - targetOffset));
             };
 
             /** Draw to the picking texture */
@@ -858,16 +877,11 @@ export default class Renderer
                  * All valid texture extensions
                  * Just save textures for further use when rendering
                  */
-                case "jpg":
-                case "jpeg":
                 case "png":
                 case "gif":
-                case "bmp":
-                case "psd":
                 case "tga":
-                case "iff":
-                case "tiff":
-                case "pict":
+                case "jpg":
+                case "jpeg":
                     filePromises.push(new Promise((resolve, reject) => {
                         const image = new Image();
                         const texture = Utils.create1PixelTexture(this.gl, [128, 192, 255, 255]);
@@ -922,6 +936,10 @@ export default class Renderer
 
         /** When all input files are read, pass them to ObjParser and re-render scene, alert on reject */
         Promise.all(filePromises).then((values) => {
+            if (objFiles === 0) {
+                alert("Nahrajte prosím alespoň 1 OBJ soubor");
+                return;
+            }
             const objMtlText = values.filter((file) => typeof file === 'string').join("\n");
             const textures = values.filter((file) => typeof file === 'object');
 
@@ -929,6 +947,17 @@ export default class Renderer
             this.mesh = this.objParser.parseObj(objMtlText, textures);
             this.objBufferInfo = this.mesh.getBufferInfo(this.gl);
             for (const [sliderName, sliderObject] of Object.entries(this.inputs.sliders.mesh)) {
+                const sliderValue = Math.abs(this.mesh[sliderName]);
+                if (sliderName.startsWith("pos")) {
+                    if (sliderValue > Mesh.defaultMaxPos) {
+                        sliderObject.slider.max = sliderValue + Mesh.defaultMaxPos;
+                        sliderObject.slider.min = -sliderValue - Mesh.defaultMaxPos;
+                    } else {
+                        sliderObject.slider.max = Mesh.defaultMaxPos;
+                        sliderObject.slider.min = -Mesh.defaultMaxPos;
+                    }
+                }
+
                 sliderObject.slider.value = this.mesh[sliderName];
                 sliderObject.sliderValue.innerHTML = this.mesh[sliderName].toFixed(1);
             }

@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import LightFieldCamera from "./lightFieldCamera";
 import {vec3} from "gl-matrix";
 import SceneObject from "./sceneObject";
@@ -9,6 +14,18 @@ import Utils from "./utils";
  */
 export default class LightField extends SceneObject
 {
+    /** @type {vec3} */
+    static defaultPosition = vec3.fromValues(-2, 2, 15);
+
+    /** @type {number} */
+    static minCameras = 1;
+
+    /** @type {number} */
+    static maxCameras = 16;
+
+    /** @type {number} */
+    static minCameraSpace = 0.5;
+
     /** @type {number} */
     horizontalCamerasCount;
 
@@ -168,14 +185,14 @@ export default class LightField extends SceneObject
         const cameraColor = [0, 0, 0, 255];
         this.iterateCameras((camera, row, column, iterator) => {
             if (camera.selected) {
-                camera.color = LightFieldCamera.SELECTED_COLOR;
+                camera.color = LightFieldCamera.selectedColor;
             } else {
                 if (iterator % 3 === 0) {
-                    cameraColor[2]++;
-                } else if (iterator % 3 === 1) {
                     cameraColor[0]++;
-                } else {
+                } else if (iterator % 3 === 1) {
                     cameraColor[1]++;
+                } else {
+                    cameraColor[2]++;
                 }
                 camera.color = [...cameraColor];
             }

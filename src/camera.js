@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import * as mat4 from 'gl-matrix/mat4';
 import * as vec3 from 'gl-matrix/vec3';
 import {glMatrix} from "gl-matrix";
@@ -9,6 +14,15 @@ import SceneObject from "./sceneObject";
  */
 export default class Camera extends SceneObject
 {
+    /** @type {vec3} */
+    static defaultPosition = vec3.fromValues(0, 0, 30);
+
+    /** @type {number} */
+    static defaultPitch = 0;
+
+    /** @type {number} */
+    static defaultYaw = -90;
+
     /** @type {number} */
     pitch;
 
@@ -34,8 +48,8 @@ export default class Camera extends SceneObject
     constructor(positionX, positionY, positionZ)
     {
         super(positionX, positionY, positionZ);
-        this.pitch = 0;
-        this.yaw = -90;
+        this.pitch = Camera.defaultPitch;
+        this.yaw = Camera.defaultYaw;
         this.front = vec3.fromValues(0, 0, -1);
         this.up = vec3.fromValues(0, 1, 0);
     }

@@ -1,4 +1,5 @@
 /**
+ * @author Matěj Hlávka
  * Main fragment shader, used for rendering scene with both the normal camera and the light field cameras
  * @type {string}
  */
@@ -26,8 +27,8 @@ export const fragmentShader = `
 
     void main() 
     {
-        vec3 normal = normalize(v_normal);
-        vec3 tangent = normalize(v_tangent);
+        vec3 normal = normalize(v_normal) * (float(gl_FrontFacing) * 2.0 - 1.0);
+        vec3 tangent = normalize(v_tangent) * (float(gl_FrontFacing) * 2.0 - 1.0);
         vec3 bitangent = normalize(cross(normal, tangent));
         
         mat3 tbn = mat3(tangent, bitangent, normal);

@@ -1,5 +1,6 @@
 module.exports = {
-    mode: "development",
+    watch: true,
+    mode: "production",
     module: {
         rules: [
             {

@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import * as twgl from "twgl.js";
 import {glMatrix, mat4, vec2, vec3} from "gl-matrix";
 import SceneObject from "./sceneObject";
@@ -8,6 +13,9 @@ import SceneObject from "./sceneObject";
  */
 export default class Mesh extends SceneObject
 {
+    /** @type {number} */
+    static defaultMaxPos = 50;
+
     /** @type {number} */
     rotX = 0;
 
@@ -154,7 +162,7 @@ export default class Mesh extends SceneObject
 
 
     /**
-     * Iterates over geometries and maps colors
+     * Iterates over geometries and maps materials
      * @param gl
      * @returns {[Object]}
      */
@@ -201,7 +209,6 @@ export default class Mesh extends SceneObject
 
 
     /**
-     *
      * @param {[number]} position
      * @param {[number]} texcoord
      * @returns {[number]}

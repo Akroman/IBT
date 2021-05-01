@@ -1,3 +1,8 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import {mat4} from "gl-matrix";
 import * as vec3 from "gl-matrix/cjs/vec3";
 

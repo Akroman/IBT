@@ -1,6 +1,6 @@
 import Camera from "./camera";
 import * as twgl from 'twgl.js';
-import {mat4} from "gl-matrix";
+import {mat4, vec3, vec2} from "gl-matrix";
 
 
 /**
@@ -15,7 +15,7 @@ export default class LightFieldCamera extends Camera
     color;
 
     /** @type {[number]} */
-    static SELECTED_COLOR = [255, 0, 0, 255];
+    static selectedColor = [255, 0, 0, 255];
 
 
 
@@ -37,7 +37,7 @@ export default class LightFieldCamera extends Camera
      * @param {number} scale
      * @returns {BufferInfo}
      */
-    static getBufferInfo(gl, scale = 1)
+    static getCameraBufferInfo(gl, scale)
     {
         const positions = [
             -1, -1, 1,  // Cube vertices
@@ -70,6 +70,38 @@ export default class LightFieldCamera extends Camera
             /** Line from point on edge to next point on edge */
             indices.push(coneBaseIndex + i, coneBaseIndex + (i + 1) % numSegments);
         }
+        positions.forEach((v, ndx) => {
+            positions[ndx] *= scale;
+        });
+        return twgl.createBufferInfoFromArrays(gl, {
+            position: positions,
+            indices
+        });
+    }
+
+
+    /**
+     * Buffer info for cubes inside cameras
+     * @param {WebGLRenderingContext} gl
+     * @param {number} scale
+     * @return {BufferInfo}
+     */
+    static getTargetBufferInfo(gl, scale)
+    {
+        const positions = [
+            -1,-1,-1, 1,-1,-1, 1, 1,-1, -1, 1,-1,
+            -1,-1, 1, 1,-1, 1, 1, 1, 1, -1, 1, 1,
+            -1,-1,-1, -1, 1,-1, -1, 1, 1, -1,-1, 1,
+            1,-1,-1, 1, 1,-1, 1, 1, 1, 1,-1, 1,
+            -1,-1,-1, -1,-1, 1, 1,-1, 1, 1,-1,-1,
+            -1, 1,-1, -1, 1, 1, 1, 1, 1, 1, 1,-1
+        ];
+        const indices = [
+            0,1,2, 0,2,3, 4,5,6, 4,6,7,
+            8,9,10, 8,10,11, 12,13,14, 12,14,15,
+            16,17,18, 16,18,19, 20,21,22, 20,22,23
+        ];
+
         positions.forEach((v, ndx) => {
             positions[ndx] *= scale;
         });

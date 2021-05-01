@@ -1,4 +1,5 @@
 /**
+ * @author Matěj Hlávka
  * Main vertex shader, used for rendering scene with both the normal camera and the light field cameras
  * @type {string}
  */

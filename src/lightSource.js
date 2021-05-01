@@ -1,5 +1,11 @@
+/**
+ * @author Matěj Hlávka
+ */
+
+
 import SceneObject from "./sceneObject";
 import Utils from "./utils";
+import * as vec3 from 'gl-matrix/vec3';
 
 
 /**
@@ -7,6 +13,9 @@ import Utils from "./utils";
  */
 export default class LightSource extends SceneObject
 {
+    /** @type {vec3} */
+    static defaultPosition = vec3.fromValues(0, 0, 30);
+
     /** @type {[number]}
     color;
 
