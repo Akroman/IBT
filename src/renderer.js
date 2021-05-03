@@ -409,7 +409,7 @@ export default class Renderer
         const renderer = this;
         input.slider.value = this[sceneObjectName][sliderName];
         input.sliderValue.innerHTML = this[sceneObjectName][sliderName].toFixed(1);
-        input.slider.onchange = function () {
+        input.slider.oninput = function () {
             const value = parseFloat(this.value);
             input.sliderValue.innerHTML = value.toFixed(1);
             renderer[sceneObjectName][sliderName] = value;
@@ -427,7 +427,7 @@ export default class Renderer
     {
         const renderer = this;
         input.value = Utils.rgbToHex(...this[sceneObjectName][colorName]);
-        input.onchange = function () {
+        input.oninput = function () {
             renderer[sceneObjectName][colorName] = Utils.hexToRgb(this.value);
         };
     }
