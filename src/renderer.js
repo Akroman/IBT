@@ -331,12 +331,13 @@ export default class Renderer
             if (!numberName.startsWith("resolution")) {
                 input.value = this.lightField[numberName];
                 this.lightField.initCameras();
-                input.oninput = function () {
+                input.onchange = function () {
                     const value = parseFloat(this.value);
                     if (numberName.endsWith("Space")) {
                         if (value < LightField.minCameraSpace) {
                             alert("Mezera mezi kamerami musí být alespoň " + LightField.minCameraSpace.toString());
                             this.value = LightField.minCameraSpace;
+                            renderer.lightField[numberName] = LightField.minCameraSpace;
                         } else {
                             renderer.lightField[numberName] = value;
                         }
@@ -347,6 +348,7 @@ export default class Renderer
                             this.value = (
                                 value < LightField.minCameras ? LightField.minCameras : LightField.maxCameras
                             ).toString();
+                            renderer.lightField[numberName] = parseInt(this.value);
                         }
                     }
                     renderer.lightField.initCameras(
@@ -406,7 +408,7 @@ export default class Renderer
         const renderer = this;
         input.slider.value = this[sceneObjectName][sliderName];
         input.sliderValue.innerHTML = this[sceneObjectName][sliderName].toFixed(1);
-        input.slider.oninput = function () {
+        input.slider.onchange = function () {
             const value = parseFloat(this.value);
             input.sliderValue.innerHTML = value.toFixed(1);
             renderer[sceneObjectName][sliderName] = value;
@@ -424,7 +426,7 @@ export default class Renderer
     {
         const renderer = this;
         input.value = Utils.rgbToHex(...this[sceneObjectName][colorName]);
-        input.oninput = function () {
+        input.onchange = function () {
             renderer[sceneObjectName][colorName] = Utils.hexToRgb(this.value);
         };
     }

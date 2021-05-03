@@ -1,0 +1,5 @@
+# Instalace a spuštění
+Pro instalaci je nutné mít nainstalovaný package manager [npm](https://www.npmjs.com). Poté už stačí jen v kořenovém adresáři aplikace spustit příkaz `npm install`. Po úspešné instalaci závislostí je zapotřebí spustit příkaz `npm run-script build` pro buildnutí projektu a následně už jen `npm run-script start`, který spustí server s aplikací. Pro přístup k aplikaci stačí do webového prohlížeče zadat URL ve tvaru `localhost:port_number`, kde `port_number` je implicitně 4000, ale lze specifikovat i vlastní port použitím příkazu `npm run-script start -- -p port_number`, kde `port_number` je požadované číslo portu. Je možné předat i další volitelné parametry, jejichž seznam lze naleznout zde: [https://www.npmjs.com/package/light-server](https://www.npmjs.com/package/light-server)
+
+# Přístup k aplikaci
+Aplikace byla nasazena na webovou stránku pomocí [Heroku](https://dashboard.heroku.com/apps) a je dostupná pomocí následujícího odkazu: [http://light-field-renderer.herokuapp.com](http://light-field-renderer.herokuapp.com)

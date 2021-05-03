@@ -25,6 +25,7 @@ export default class Mesh extends SceneObject
     /** @type {number} */
     rotZ = 0;
 
+    /** @type {number} */
     matScale = 1;
 
     /** @type {[Object]} */
