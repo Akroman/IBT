@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module Mesh
  */
 
 
@@ -10,10 +11,15 @@ import SceneObject from "./sceneObject";
 
 /**
  * Class representing parsed object from objParser
+ * @extends SceneObject
  */
 export default class Mesh extends SceneObject
 {
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static defaultMaxPos = 50;
 
     /** @type {number} */
@@ -28,17 +34,23 @@ export default class Mesh extends SceneObject
     /** @type {number} */
     matScale = 1;
 
-    /** @type {[Object]} */
+    /**
+     * @type {Object[]}
+     * @private
+     */
     #geometries;
 
-    /** @type {Object} */
+    /**
+     * @type {Object}
+     * @private
+     */
     #materials
 
 
 
     /**
-     * @param {[Object]} geometries
-     * @param {[String]} materialLibs
+     * @param {Object[]} geometries
+     * @param {string[]} materialLibs
      * @param {Object} materials
      */
     constructor(geometries, materialLibs, materials)
@@ -125,7 +137,7 @@ export default class Mesh extends SceneObject
 
     /**
      * Gets maximum and minimum positions from an array of positions
-     * @param {[]} positions
+     * @param {number[]} positions
      * @returns {Object}
      */
     #getExtents(positions)
@@ -165,7 +177,7 @@ export default class Mesh extends SceneObject
     /**
      * Iterates over geometries and maps materials
      * @param gl
-     * @returns {[Object]}
+     * @returns {Object[]}
      */
     getBufferInfo(gl)
     {
@@ -196,7 +208,7 @@ export default class Mesh extends SceneObject
 
 
     /**
-     * @param {[number]} positions
+     * @param {number[]} positions
      * @returns {function(): *}
      */
     #createUnindexedIterator(positions)
@@ -210,9 +222,9 @@ export default class Mesh extends SceneObject
 
 
     /**
-     * @param {[number]} position
-     * @param {[number]} texcoord
-     * @returns {[number]}
+     * @param {number[]} position
+     * @param {number[]} texcoord
+     * @returns {number[]}
      */
     #generateTangents(position, texcoord)
     {

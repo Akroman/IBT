@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module SceneObject
  */
 
 

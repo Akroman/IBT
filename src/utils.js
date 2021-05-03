@@ -1,5 +1,10 @@
 /**
  * @author Matěj Hlávka
+ * @module Utils
+ */
+
+
+/**
  * Class containing various static helper methods
  */
 export default class Utils
@@ -7,8 +12,8 @@ export default class Utils
     /**
      * Converts value from one range to another
      * @param {number} value Value to be converted from one range to another
-     * @param {[number]} fromRange Array of two numbers - minimum and maximum (range, that the number is currently in)
-     * @param {[number]} toRange Array of two numbers - minimum and maximum (range, that the number is to be converted to)
+     * @param {number[]} fromRange Array of two numbers - minimum and maximum (range, that the number is currently in)
+     * @param {number[]} toRange Array of two numbers - minimum and maximum (range, that the number is to be converted to)
      * @returns {number} Value converted from range fromRange to range toRange
      */
     static convertRange(value, fromRange, toRange)
@@ -30,7 +35,7 @@ export default class Utils
     /**
      * Creates texture from supplied pixel
      * @param {WebGLRenderingContext} gl
-     * @param {[number]} pixel
+     * @param {number[]} pixel
      * @returns {WebGLTexture}
      */
     static create1PixelTexture(gl, pixel)
@@ -54,8 +59,8 @@ export default class Utils
 
     /**
      * Checks if all items in two arrays are equal
-     * @param {[]} firstArray
-     * @param {[]} secondArray
+     * @param {Array} firstArray
+     * @param {Array} secondArray
      * @return {boolean}
      */
     static arrayEquals(firstArray, secondArray)
@@ -67,7 +72,7 @@ export default class Utils
 
     /**
      * Creates pair of light field progress bar container and light field progress bar
-     * @return {[HTMLDivElement]}
+     * @return {HTMLDivElement[]}
      */
     static createLightFieldProgressBar()
     {

@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module Renderer
  */
 
 
@@ -46,7 +47,7 @@ export default class Renderer
     /** @type {Mesh} */
     mesh;
 
-    /** @type {[Object]} */
+    /** @type {Object[]} */
     objBufferInfo;
 
     /** @type {BufferInfo} */
@@ -462,7 +463,7 @@ export default class Renderer
      * Disables or enables given sliders
      * @param {string} sceneObjectName
      * @param {boolean} toggle
-     * @param {[string]} sliders
+     * @param {string[]} sliders
      */
     toggleSliders(sceneObjectName, toggle, sliders = [])
     {
@@ -486,7 +487,7 @@ export default class Renderer
      * Disables or enables inputs
      * If inputs param is supplied, applies toggle to these inputs only, otherwise on all inputs
      * @param {boolean} toggle
-     * @param {[HTMLInputElement]} inputsToToggle
+     * @param {HTMLInputElement[]} inputsToToggle
      */
     toggleInputs(toggle, inputsToToggle = [])
     {
@@ -510,7 +511,7 @@ export default class Renderer
 
     /**
      * Gets inputs and selectboxes that are currently disabled
-     * @return {[HTMLInputElement]}
+     * @return {HTMLInputElement[]}
      */
     getDisabledInputs()
     {

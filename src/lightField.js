@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module LightField
  */
 
 
@@ -11,19 +12,36 @@ import Utils from "./utils";
 
 /**
  * Class representing light field, contains 2D array of light field cameras
+ * @extends SceneObject
  */
 export default class LightField extends SceneObject
 {
-    /** @type {vec3} */
+    /**
+     * @type {vec3}
+     * @static
+     * @constant
+     */
     static defaultPosition = vec3.fromValues(-2, 2, 15);
 
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static minCameras = 1;
 
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static maxCameras = 16;
 
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static minCameraSpace = 0.5;
 
     /** @type {number} */
@@ -38,10 +56,13 @@ export default class LightField extends SceneObject
     /** @type {number} */
     verticalCameraSpace;
 
-    /** @type {[number]} */
+    /** @type {number[]} */
     cameraBackgroundColor;
 
-    /** @type {[]} */
+    /**
+     * @type {Array.<LightFieldCamera[]>}
+     * @private
+     */
     #cameraArray;
 
 
@@ -217,7 +238,7 @@ export default class LightField extends SceneObject
 
     /**
      * Returns a pair representing index of selected camera in following order: [row, column]
-     * @returns {[number]}
+     * @returns {number[]}
      */
     get selectedCameraIndex()
     {
@@ -233,7 +254,7 @@ export default class LightField extends SceneObject
 
     /**
      * Returns background color scaled to values for WebGL
-     * @return {[number]}
+     * @return {number[]}
      */
     get scaledBackgroundColor()
     {

@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module LightSource
  */
 
 
@@ -10,13 +11,18 @@ import * as vec3 from 'gl-matrix/vec3';
 
 /**
  * Class representing source of light in the scene
+ * @extends SceneObject
  */
 export default class LightSource extends SceneObject
 {
-    /** @type {vec3} */
+    /**
+     * @type {vec3}
+     * @static
+     * @constant
+     */
     static defaultPosition = vec3.fromValues(0, 0, 30);
 
-    /** @type {[number]}
+    /** @type {number[]} */
     color;
 
 
@@ -34,7 +40,7 @@ export default class LightSource extends SceneObject
 
 
     /**
-     * @returns {[number]}
+     * @returns {number[]}
      */
     get scaledColor()
     {

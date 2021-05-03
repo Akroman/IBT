@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module Camera
  */
 
 
@@ -11,16 +12,29 @@ import SceneObject from "./sceneObject";
 
 /**
  * Class for handling logic around camera
+ * @extends SceneObject
  */
 export default class Camera extends SceneObject
 {
-    /** @type {vec3} */
+    /**
+     * @type {vec3}
+     * @static
+     * @constant
+     */
     static defaultPosition = vec3.fromValues(0, 0, 30);
 
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static defaultPitch = 0;
 
-    /** @type {number} */
+    /**
+     * @type {number}
+     * @static
+     * @constant
+     */
     static defaultYaw = -90;
 
     /** @type {number} */

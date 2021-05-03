@@ -1,5 +1,9 @@
 /**
  * @author Matěj Hlávka
+ */
+
+
+/**
  * Main function of the program, creates an instance of Renderer, initializes its inputs and calls render method
  * Surrounded with try catch for warnings about initializing errors (eg. browser does not support WebGL, etc.)
  */

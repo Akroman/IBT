@@ -1,20 +1,31 @@
+/**
+ * @author Matěj Hlávka
+ * @module LightFieldCamera
+ */
+
+
 import Camera from "./camera";
 import * as twgl from 'twgl.js';
-import {mat4, vec3, vec2} from "gl-matrix";
+import {mat4} from "gl-matrix";
 
 
 /**
  * Class representing single camera in a light field
+ * @extends Camera
  */
 export default class LightFieldCamera extends Camera
 {
     /** @type {boolean} */
     selected;
 
-    /** @type {[number]} */
+    /** @type {number[]} */
     color;
 
-    /** @type {[number]} */
+    /**
+     * @type {number[]}
+     * @static
+     * @constant
+     */
     static selectedColor = [255, 0, 0, 255];
 
 

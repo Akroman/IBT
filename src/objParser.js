@@ -1,5 +1,6 @@
 /**
  * @author Matěj Hlávka
+ * @module ObjParser
  */
 
 
@@ -12,46 +13,88 @@ import Utils from "./utils";
  */
 export default class ObjParser
 {
-    /** @type {WebGLRenderingContext} */
+    /**
+     * @type {WebGLRenderingContext}
+     * @private
+     */
     #gl;
 
-    /** @type {[[number]]} */
+    /**
+     * @type {Array.<number[]>}
+     * @private
+     */
     #objPositions;
 
-    /** @type {[[number]]} */
+    /**
+     * @type {Array.<number[]>}
+     * @private
+     */
     #objTexcoords;
 
-    /** @type {[[number]]} */
+    /**
+     * @type {Array.<number[]>}
+     * @private
+     */
     #objNormals;
 
-    /** @type {[[number]]} */
+    /**
+     * @type {Array.<number[]>}
+     * @private
+     */
     #objColors;
 
-    /** @type {[]} */
+    /**
+     * @type {Array.<Array.<number[]>>}
+     * @private
+     */
     #objVertexData;
 
-    /** @type {[]} */
+    /**
+     * @type {Array.<number[]>}
+     * @private
+     */
     #webglVertexData;
 
-    /** @type {Object} */
+    /**
+     * @type {Object}
+     * @private
+     */
     #geometry;
 
-    /** @type {[Object]} */
+    /**
+     * @type {Object[]}
+     * @private
+     */
     #geometries;
 
-    /** @type {[]} */
+    /**
+     * @type {string[]}
+     * @private
+     */
     #materialLibs;
 
-    /** @type {string} */
+    /**
+     * @type {string}
+     * @private
+     */
     #material;
 
-    /** @type {Object} */
+    /**
+     * @type {Object}
+     * @private
+     */
     #materialObject;
 
-    /** @type {Object} */
+    /**
+     * @type {Object}
+     * @private
+     */
     #materials;
 
-    /** @type {string} */
+    /**
+     * @type {string}
+     * @private
+     */
     #object;
 
 
@@ -113,7 +156,7 @@ export default class ObjParser
     /**
      * Main function of this class, returns object with data ready to be passed for WebGL
      * @param {string} objText
-     * @param {[Object]} textures
+     * @param {Object[]} textures
      * @returns {Mesh}
      */
     parseObj(objText, textures = [])
