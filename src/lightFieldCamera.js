@@ -99,13 +99,17 @@ export default class LightFieldCamera extends Camera
      */
     static getTargetBufferInfo(gl, scale)
     {
+        /**
+         * Cube info (positions and indices arrays) is inspired, influenced or copied from the sources:
+         * -- https://www.tutorialspoint.com/webgl/webgl_cube_rotation.htm
+         */
         const positions = [
-            -1,-1,-1, 1,-1,-1, 1, 1,-1, -1, 1,-1,
-            -1,-1, 1, 1,-1, 1, 1, 1, 1, -1, 1, 1,
-            -1,-1,-1, -1, 1,-1, -1, 1, 1, -1,-1, 1,
-            1,-1,-1, 1, 1,-1, 1, 1, 1, 1,-1, 1,
-            -1,-1,-1, -1,-1, 1, 1,-1, 1, 1,-1,-1,
-            -1, 1,-1, -1, 1, 1, 1, 1, 1, 1, 1,-1
+            -1,-1,-1, 1,-1,-1, 1, 1,-1,-1, 1,-1,
+            -1,-1, 1, 1,-1, 1, 1, 1, 1,-1, 1, 1,
+            -1,-1,-1,-1, 1,-1,-1, 1, 1,-1,-1, 1,
+             1,-1,-1, 1, 1,-1, 1, 1, 1, 1,-1, 1,
+            -1,-1,-1,-1,-1, 1, 1,-1, 1, 1,-1,-1,
+            -1, 1,-1,-1, 1, 1, 1, 1, 1, 1, 1,-1
         ];
         const indices = [
             0,1,2, 0,2,3, 4,5,6, 4,6,7,

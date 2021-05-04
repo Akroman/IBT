@@ -28,9 +28,9 @@ export default class LightSource extends SceneObject
 
 
     /**
-     * @param {int} positionX
-     * @param {int} positionY
-     * @param {int} positionZ
+     * @param {number} positionX
+     * @param {number} positionY
+     * @param {number} positionZ
      */
     constructor(positionX, positionY, positionZ)
     {

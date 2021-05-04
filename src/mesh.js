@@ -96,7 +96,10 @@ export default class Mesh extends SceneObject
     /**
      * Moves mesh to the center of world space
      */
-    center() { this.position = this.centerOffset; }
+    center()
+    {
+        this.position = this.centerOffset;
+    }
 
 
     /**
@@ -137,6 +140,7 @@ export default class Mesh extends SceneObject
 
     /**
      * Gets maximum and minimum positions from an array of positions
+     * @private
      * @param {number[]} positions
      * @returns {Object}
      */
@@ -208,6 +212,7 @@ export default class Mesh extends SceneObject
 
 
     /**
+     * @private
      * @param {number[]} positions
      * @returns {function(): *}
      */
@@ -222,6 +227,7 @@ export default class Mesh extends SceneObject
 
 
     /**
+     * @private
      * @param {number[]} position
      * @param {number[]} texcoord
      * @returns {number[]}

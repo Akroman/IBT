@@ -54,11 +54,17 @@ export default class SceneObject
     /**
      * @returns {vec3} vec3 containing X, Y and Z positions of camera
      */
-    get position() { return vec3.fromValues(this.posX, this.posY, this.posZ); }
+    get position()
+    {
+        return vec3.fromValues(this.posX, this.posY, this.posZ);
+    }
 
 
     /**
      * @param {vec3} position
      */
-    set position(position) { [this.posX, this.posY, this.posZ] = position; }
+    set position(position)
+    {
+        [this.posX, this.posY, this.posZ] = position;
+    }
 }

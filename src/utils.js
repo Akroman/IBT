@@ -11,6 +11,8 @@ export default class Utils
 {
     /**
      * Converts value from one range to another
+     * This function is inspired, influenced or copied from the sources:
+     * -- https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
      * @param {number} value Value to be converted from one range to another
      * @param {number[]} fromRange Array of two numbers - minimum and maximum (range, that the number is currently in)
      * @param {number[]} toRange Array of two numbers - minimum and maximum (range, that the number is to be converted to)
@@ -93,6 +95,8 @@ export default class Utils
 
     /**
      * Converts hexadecimal string color to array representing RGB color
+     * This function is inspired, influenced or copied from the sources:
+     * -- https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
      * @param hex
      * @return {number[]|null}
      */
@@ -109,6 +113,8 @@ export default class Utils
 
     /**
      * Converts RGB color to string hexadecimal representation of the color
+     * This function is inspired, influenced or copied from the sources:
+     * -- https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
      * @param {number} r
      * @param {number} g
      * @param {number} b

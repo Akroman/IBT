@@ -85,6 +85,7 @@ export default class Camera extends SceneObject
 
     /**
      * @param {mat4} world
+     * @returns {mat4}
      */
     getWorldViewProjectionMatrix(world)
     {
@@ -95,6 +96,7 @@ export default class Camera extends SceneObject
 
 
     /**
+     * Creates direction vector that camera is looking at from pitch and yaw values
      * @returns {vec3}
      */
     get direction()
@@ -154,7 +156,10 @@ export default class Camera extends SceneObject
 }
 
 
-
+/**
+ * Class representing exception when camera operations are handled in wrong order
+ * eg. camera is set to perspective before creating projection matrix
+ */
 class InvalidCameraStateException extends Error
 {
     constructor(message)

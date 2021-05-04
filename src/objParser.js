@@ -210,6 +210,7 @@ export default class ObjParser
 
     /**
      * Takes care of parsing single lines of .obj file
+     * @private
      * @param {string} keyword - keyword from the line beginning
      * @param {array} data - array containing elements from rest of the line (after the keyword)
      * @param {string} unparsedArguments - string containing rest of the line (after the keyword), this is used only for materials or objects
@@ -301,6 +302,7 @@ export default class ObjParser
 
 
     /**
+     * @private
      * @param {string} vertex
      */
     #addVertex(vertex)
@@ -320,6 +322,7 @@ export default class ObjParser
 
     /**
      * Resets geometry, gets called everytime the parser runs into mtllib or usemtl keyword
+     * @private
      */
     #newGeometry()
     {
@@ -332,6 +335,7 @@ export default class ObjParser
     /**
      * Initializes geometry, parser calls this function everytime it runs into an f keyword, because there might be .obj files without usemtl keyword
      * Geometry holds object name, material name and data object, which consists of positions, texcoord and normals
+     * @private
      */
     #setGeometry()
     {

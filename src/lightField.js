@@ -200,6 +200,7 @@ export default class LightField extends SceneObject
 
     /**
      * Updates colors of cameras
+     * @private
      */
     #updateCameraColors()
     {
@@ -264,7 +265,9 @@ export default class LightField extends SceneObject
 }
 
 
-
+/**
+ * Class representing exception when trying to access camera on non-existent index
+ */
 class InvalidCameraIndexException extends Error
 {
     constructor(message)
